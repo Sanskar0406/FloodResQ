@@ -520,15 +520,27 @@ def get_map_data(db: Session = Depends(get_db)):
 
 # ----------------- Root API & Uploads Serving -----------------
 
-@app.get("/")
-def api_root():
-    return {
-        "service": "FloodResQ Emergency Response API",
-        "status": "online",
-        "version": "1.0.0",
-        "docs_url": "/docs",
-        "health_url": "/api/health"
-    }
-
 # Mount uploads directory for photo attachments
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+# When deployed on Railway/Cloud: act strictly as a REST API.
+# When running locally on your PC: also mount frontend for 1-click local testing at http://127.0.0.1:8000
+is_cloud = bool(
+    os.environ.get("RAILWAY_ENVIRONMENT")
+    or os.environ.get("RAILWAY_PROJECT_ID")
+    or os.environ.get("ENVIRONMENT", "").lower() == "production"
+)
+
+if is_cloud:
+    @app.get("/")
+    def api_root():
+        return {
+            "service": "FloodResQ Emergency Response API",
+            "status": "online",
+            "version": "1.0.0",
+            "docs_url": "/docs",
+            "health_url": "/api/health"
+        }
+elif os.path.isdir(FRONTEND_DIR):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
