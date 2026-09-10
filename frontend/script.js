@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return `http://${window.location.hostname}:8000`;
     }
 
+    // Default to live Railway backend when running on Vercel
+    if (window.location.hostname.includes('vercel.app')) {
+      return 'https://web-production-fb000.up.railway.app';
+    }
+
     const storedApi = localStorage.getItem('floodresq_api_base');
     if (storedApi) return storedApi.replace(/\/$/, '');
 

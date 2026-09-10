@@ -1012,12 +1012,14 @@
   <script>
     // Determine API Base URL dynamically
     const API_BASE = (() => {
+      if (window.FLOODRESQ_API_URL) return window.FLOODRESQ_API_URL.replace(/\/$/, '');
       if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
-      if (window.location.port && window.location.port !== '8000') {
-        const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-          ? window.location.hostname
-          : '127.0.0.1';
-        return `http://${host}:8000`;
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocalhost && window.location.port && window.location.port !== '8000') {
+        return `http://${window.location.hostname}:8000`;
+      }
+      if (window.location.hostname.includes('vercel.app')) {
+        return 'https://web-production-fb000.up.railway.app';
       }
       return '';
     })();
