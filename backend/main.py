@@ -58,9 +58,12 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health_check():
+    db_engine = "postgresql" if "postgres" in str(engine.url) else "sqlite"
     return {
         "status": "online",
         "app": "FloodResQ",
+        "database_engine": db_engine,
+        "database_connected": True,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "gemini_configured": bool(os.environ.get("GEMINI_API_KEY"))
     }
