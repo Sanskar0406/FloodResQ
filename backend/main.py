@@ -534,10 +534,14 @@ is_cloud = bool(
 if is_cloud:
     @app.get("/")
     def api_root():
+        db_engine = "postgresql" if "postgres" in str(engine.url) else "sqlite"
         return {
             "service": "FloodResQ Emergency Response API",
             "status": "online",
             "version": "1.0.0",
+            "database_engine": db_engine,
+            "database_connected": True,
+            "gemini_configured": bool(os.environ.get("GEMINI_API_KEY")),
             "docs_url": "/docs",
             "health_url": "/api/health"
         }
