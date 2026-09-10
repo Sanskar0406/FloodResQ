@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Default to live Railway backend when running on Vercel
     if (window.location.hostname.includes('vercel.app')) {
-      return 'https://web-production-fb000.up.railway.app';
+      return 'https://floodresq-production.up.railway.app';
     }
 
     const storedApi = localStorage.getItem('floodresq_api_base');
