@@ -13,11 +13,19 @@ except ImportError:
     pass
 
 if __name__ == "__main__":
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 8000))
+    is_prod = (
+        os.environ.get("ENVIRONMENT", "").lower() == "production"
+        or os.environ.get("RAILWAY_ENVIRONMENT") is not None
+    )
+    reload = not is_prod
+
     print("==================================================================")
     print("  FloodResQ — AI Flood Monitoring & Emergency Response Platform")
     print("==================================================================")
-    print("  Server starting at: http://127.0.0.1:8000")
-    print("  API Docs available at: http://127.0.0.1:8000/docs")
-    print("  Report page at: http://127.0.0.1:8000/report.html")
+    print(f"  Server starting at: http://{host}:{port}")
+    print(f"  API Docs available at: http://{host}:{port}/docs")
+    print(f"  Report page at: http://{host}:{port}/report.html")
     print("==================================================================")
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("backend.main:app", host=host, port=port, reload=reload)

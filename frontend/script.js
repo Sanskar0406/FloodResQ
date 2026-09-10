@@ -2,16 +2,27 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // Determine API Base URL dynamically:
-  // If served from FastAPI directly (port 8000), use relative path ''.
-  // If served from VS Code Live Server (port 5500, 5501), Vite, or file://, target backend on port 8000.
+  // 1. window.FLOODRESQ_API_URL or <meta name="api-base">
+  // 2. Relative '' when served together (e.g., Railway all-in-one)
+  // 3. http://127.0.0.1:8000 when running via local static servers (Live Server, file://)
   const API_BASE = (() => {
-    if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
-    if (window.location.port && window.location.port !== '8000') {
-      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? window.location.hostname
-        : '127.0.0.1';
-      return `http://${host}:8000`;
+    if (window.FLOODRESQ_API_URL) return window.FLOODRESQ_API_URL.replace(/\/$/, '');
+
+    const metaApi = document.querySelector('meta[name="api-base"]');
+    if (metaApi && metaApi.content && !metaApi.content.startsWith('http://127.0.0.1:8000')) {
+      return metaApi.content.replace(/\/$/, '');
     }
+
+    if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
+
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost && window.location.port && window.location.port !== '8000') {
+      return `http://${window.location.hostname}:8000`;
+    }
+
+    const storedApi = localStorage.getItem('floodresq_api_base');
+    if (storedApi) return storedApi.replace(/\/$/, '');
+
     return '';
   })();
 

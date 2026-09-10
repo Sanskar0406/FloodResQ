@@ -131,6 +131,34 @@ python -m unittest backend/tests/test_api.py
 
 ---
 
+## 🚢 Deployment Guide
+
+### Option A: Railway (Recommended — Full App & Database)
+Railway deploys the entire application (FastAPI backend + static frontend) on a single URL with zero configuration.
+
+1. Go to [railway.app](https://railway.app) and create a **New Project**.
+2. Select **Deploy from GitHub repo** and choose **`FloodResQ`**.
+3. Railway automatically detects `Procfile` / `railway.json` and starts the app with Python.
+4. *(Optional Database)*: In your Railway project, click **+ New** -> **Database** -> **Add PostgreSQL**.
+   - Railway will automatically link the database and provide `DATABASE_URL`.
+   - The application automatically switches from SQLite to PostgreSQL with no code changes!
+5. *(Optional AI Key)*: In Railway service **Variables**, add `GEMINI_API_KEY` if cloud AI scoring is desired.
+6. Under service **Settings** -> **Networking**, click **Generate Domain** to get your public live URL (e.g. `https://floodresq-production.up.railway.app`).
+
+### Option B: Vercel (Frontend CDN)
+If you want to host the frontend separately on Vercel's global edge network:
+
+1. Import your `FloodResQ` repository on [vercel.com](https://vercel.com).
+2. Set **Root Directory** to `./` (or `frontend`).
+3. Vercel will build and serve your static frontend using `vercel.json`.
+4. Point the frontend to your deployed Railway backend URL by adding this meta tag inside your HTML `<head>` or setting `window.FLOODRESQ_API_URL`:
+   ```html
+   <meta name="api-base" content="https://your-railway-app.up.railway.app">
+   ```
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
