@@ -22,10 +22,10 @@ if __name__ == "__main__":
     reload = not is_prod
 
     print("==================================================================")
-    print("  FloodResQ — AI Flood Monitoring & Emergency Response Platform")
+    print("  FloodResQ — AI Flood Monitoring & Emergency Response API")
     print("==================================================================")
-    print(f"  Server starting at: http://{host}:{port}")
+    print(f"  Backend API running at: http://{host}:{port}")
     print(f"  API Docs available at: http://{host}:{port}/docs")
-    print(f"  Report page at: http://{host}:{port}/report.html")
+    print(f"  Health Check at: http://{host}:{port}/api/health")
     print("==================================================================")
     uvicorn.run("backend.main:app", host=host, port=port, reload=reload)

@@ -515,11 +515,17 @@ def get_map_data(db: Session = Depends(get_db)):
         "center": {"lat": 18.5204, "lng": 73.8567, "zoom": 13}
     }
 
-# ----------------- Static File Serving -----------------
+# ----------------- Root API & Uploads Serving -----------------
 
-# Mount uploads directory
+@app.get("/")
+def api_root():
+    return {
+        "service": "FloodResQ Emergency Response API",
+        "status": "online",
+        "version": "1.0.0",
+        "docs_url": "/docs",
+        "health_url": "/api/health"
+    }
+
+# Mount uploads directory for photo attachments
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
-
-# Mount frontend directory for index.html, report.html, styles, scripts
-if os.path.isdir(FRONTEND_DIR):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
