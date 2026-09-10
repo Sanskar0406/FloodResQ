@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071426" />
+  <title>Track Report Status — FloodResQ</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .status-page {
+      background: #f1f5f9;
+      min-height: calc(100vh - 70px);
+      padding: 40px 4% 80px;
+    }
+
+    .status-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .status-head {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .status-head h1 {
+      font-size: 36px;
+      color: #071426;
+      margin: 8px 0;
+      font-weight: 800;
+    }
+
+    .status-head h1 span {
+      color: #0284c7;
+    }
+
+    .status-head p {
+      color: #64748b;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* Search Card */
+    .search-card {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-card input {
+      flex: 1;
+      min-width: 240px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-card input:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .search-card button {
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 22px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-card button:hover {
+      background: #0369a1;
+    }
+
+    /* Stepper */
+    .stepper-card {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .stepper-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stepper-title .live-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #059669;
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulseDot 1.4s infinite;
+    }
+
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(1.3);
+      }
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+
+    .step-item {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: #94a3b8;
+      border: 2px solid #cbd5e1;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      margin: 0 auto 10px;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .step-item.active .step-icon-wrap {
+      background: #0284c7;
+      color: white;
+      border-color: #0284c7;
+      box-shadow: 0 0 0 6px rgba(2, 132, 199, 0.2);
+    }
+
+    .step-item.completed .step-icon-wrap {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+
+    .step-item b {
+      display: block;
+      font-size: 12px;
+      color: #334155;
+      margin-bottom: 3px;
+    }
+
+    .step-item.active b {
+      color: #0284c7;
+      font-weight: 800;
+    }
+
+    .step-item.completed b {
+      color: #0f172a;
+    }
+
+    .step-item small {
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.25;
+      display: block;
+    }
+
+    /* Main Report Details */
+    .report-card {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.05);
+      margin-bottom: 24px;
+    }
+
+    .report-top-bar {
+      background: #071426;
+      color: white;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .report-top-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .report-top-left h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .status-badge-hero {
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge-pending {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fcd34d;
+    }
+
+    .status-badge-assigned {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #7dd3fc;
+      animation: pulseBorder 2s infinite;
+    }
+
+    .status-badge-resolved {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    @keyframes pulseBorder {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4);
+      }
+
+      50% {
+        box-shadow: 0 0 0 6px rgba(2, 132, 199, 0);
+      }
+    }
+
+    .report-body-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .info-section h3 {
+      font-size: 15px;
+      color: #0f172a;
+      margin: 0 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-row {
+      margin-bottom: 12px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 3px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #0f172a;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    /* AI Box */
+    .ai-score-box {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .ai-score-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .ai-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .urgency-critical {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #f87171;
+    }
+
+    .urgency-high {
+      background: #ffedd5;
+      color: #ea580c;
+      border: 1px solid #fb923c;
+    }
+
+    .urgency-medium {
+      background: #fef9c3;
+      color: #ca8a04;
+      border: 1px solid #facc15;
+    }
+
+    .urgency-low {
+      background: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #4ade80;
+    }
+
+    /* Dispatch Unit Box */
+    .dispatch-box {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .dispatch-box.awaiting {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .dispatch-box h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #065f46;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dispatch-box.awaiting h4 {
+      color: #1e40af;
+    }
+
+    .dispatch-box p {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    /* Map Box */
+    #statusMap {
+      height: 220px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      margin-top: 10px;
+      z-index: 1;
+      isolation: isolate;
+    }
+
+    /* Photo attachment */
+    .photo-preview {
+      margin-top: 10px;
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .photo-preview img {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Recent list */
+    .recent-card {
+      background: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    }
+
+    .recent-card h3 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .recent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+
+    .recent-item:hover {
+      border-color: #38bdf8;
+      background: white;
+    }
+
+    .recent-left b {
+      font-size: 13px;
+      color: #0f172a;
+      display: block;
+    }
+
+    .recent-left small {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .recent-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .report-body-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stepper {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .status-head h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="brand" href="index.html" title="FloodResQ — Faster Response. Safer Tomorrows.">
+      <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo">
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+
+    <nav id="mainNav">
+      <a href="index.html">Home</a>
+      <a href="report.html">Report</a>
+      <a class="active" href="status.html">Track Status</a>
+      <a href="live-map.html">Live Map</a>
+      <a href="volunteer.html">Volunteer</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="sos" id="sosNavButton">🚨 Emergency SOS</button>
+    </div>
+  </header>
+
+  <main class="status-page">
+    <div class="status-container">
+      <div class="status-head">
+        <p class="eyebrow" style="color:#0284c7; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+          REAL-TIME EMERGENCY TRACKER</p>
+        <h1>Citizen Incident <span>Live Status</span></h1>
+        <p>Track your rescue dispatch, AI priority triage, and assigned municipal response units.</p>
+      </div>
+
+      <!-- Search by Incident ID -->
+      <div class="search-card">
+        <input type="text" id="incidentSearchInput" placeholder="Enter Incident ID (e.g. 7e576cc3 or full UUID)..." />
+        <button id="btnSearchIncident">🔍 Search Report</button>
+      </div>
+
+      <!-- Report View Container (Shown when report is loaded) -->
+      <div id="reportDisplayArea" style="display:none;">
+        <!-- Stepper Card -->
+        <div class="stepper-card">
+          <div class="stepper-title">
+            <span>Rescue Response Pipeline</span>
+            <span class="live-pulse"><span class="live-dot"></span> Live Dispatch Sync</span>
+          </div>
+
+          <div class="stepper">
+            <div class="step-item" id="stepLogged">
+              <div class="step-icon-wrap">📝</div>
+              <b>1. Received</b>
+              <small>Incident logged to system</small>
+            </div>
+            <div class="step-item" id="stepTriage">
+              <div class="step-icon-wrap">🧠</div>
+              <b>2. AI Triaged</b>
+              <small>Priority scored & verified</small>
+            </div>
+            <div class="step-item" id="stepDispatched">
+              <div class="step-icon-wrap">🚑</div>
+              <b>3. Dispatched</b>
+              <small>Nearest team assigned</small>
+            </div>
+            <div class="step-item" id="stepResolved">
+              <div class="step-icon-wrap">✓</div>
+              <b>4. Resolved</b>
+              <small>Rescue confirmed safe</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Report Card -->
+        <div class="report-card">
+          <div class="report-top-bar">
+            <div class="report-top-left">
+              <h2 id="dispReportId">Incident #--------</h2>
+              <button class="copy-btn" id="btnCopyId" title="Copy ID">📋 Copy</button>
+            </div>
+            <div id="dispStatusBadge" class="status-badge-hero status-badge-pending">
+              ● Pending Review
+            </div>
+          </div>
+
+          <div class="report-body-grid">
+            <!-- Left Column: Details & AI Triage -->
+            <div>
+              <div class="info-section">
+                <h3>📍 Location & Situation</h3>
+                <div class="info-row">
+                  <div class="info-label">Reported Location</div>
+                  <div class="info-value" id="dispLocation">—</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Need Type Requested</div>
+                  <div class="info-value" id="dispNeedType" style="text-transform:capitalize;">—</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Citizen Description</div>
+                  <div class="info-value" id="dispDescription"
+                    style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0;">—</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Time Logged</div>
+                  <div class="info-value" id="dispTime" style="font-size:12px; color:#64748b;">—</div>
+                </div>
+
+                <!-- Attached Photo if exists -->
+                <div id="dispPhotoContainer" style="display:none;" class="info-row">
+                  <div class="info-label">Attached Photo Verification</div>
+                  <div class="photo-preview">
+                    <img id="dispPhotoImg" src="" alt="Flood verification photo" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Triage Box -->
+              <div class="ai-score-box">
+                <div class="ai-score-head">
+                  <span
+                    style="font-weight:700; font-size:13px; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                    🧠 AI Emergency Assessment
+                  </span>
+                  <span id="dispUrgencyTag" class="ai-tag urgency-high">HIGH</span>
+                </div>
+                <div style="font-size:12px; color:#475569; line-height:1.4;" id="dispReasoning">
+                  Scoring emergency urgency...
+                </div>
+                <small style="display:block; margin-top:8px; color:#0284c7; font-weight:600;" id="dispCredibility">
+                  ✓ Credibility Score: HIGH
+                </small>
+              </div>
+            </div>
+
+            <!-- Right Column: Dispatch Unit & Map -->
+            <div>
+              <!-- Dispatch Status Unit -->
+              <div id="dispUnitBox" class="dispatch-box awaiting">
+                <h4 id="dispUnitHeading">📡 Municipal Dispatch Status</h4>
+                <p id="dispUnitDetails">Searching for nearest available rescue team...</p>
+                <div id="dispUnitExtra" style="font-size:11px; font-weight:700; color:#0284c7;"></div>
+              </div>
+
+              <!-- Interactive Location Map -->
+              <div class="info-section">
+                <h3>🗺️ GPS Dispatch Map</h3>
+                <div id="statusMap"></div>
+                <small id="dispCoordinates"
+                  style="display:block; margin-top:6px; font-size:11px; color:#64748b;"></small>
+              </div>
+
+              <!-- Emergency Call Advisory -->
+              <div
+                style="margin-top:16px; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:12px; font-size:11px; color:#9f1239;">
+                <b>🚨 Immediate Danger?</b>
+                <p style="margin:4px 0 0;">If floodwater is rapidly entering your home or vehicle, contact emergency
+                  services directly: <b>Dial 112 (Disaster Rescue)</b> or <b>108 (Medical Emergency)</b>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No report state / Recent reports view -->
+      <div id="noReportArea" class="recent-card">
+        <h3>📋 Active Citizen Emergency Requests</h3>
+        <p style="font-size:13px; color:#64748b; margin-bottom:16px;">
+          Enter your Incident ID in the search bar above, or select any recently submitted emergency report below to
+          inspect its live status.
+        </p>
+        <div id="recentReportsList">
+          <div style="text-align:center; padding:30px; color:#94a3b8;">Loading active reports...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="mainToast">Notification</div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script>
+    // Determine API Base URL dynamically:
+    // If served from FastAPI directly (port 8000), use relative path ''.
+    // If served from VS Code Live Server (port 5500, 5501), Vite, or file://, target backend on port 8000.
+    const API_BASE = (() => {
+      if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
+      if (window.location.port && window.location.port !== '8000') {
+        const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? window.location.hostname
+          : '127.0.0.1';
+        return `http://${host}:8000`;
+      }
+      return '';
+    })();
+
+    let currentReportId = null;
+    let statusMapInstance = null;
+    let statusMarkerGroup = null;
+    let autoRefreshTimer = null;
+
+    function showToast(msg, duration = 3000) {
+      const toast = document.getElementById('mainToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // Mobile nav toggle
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mainNav = document.getElementById('mainNav');
+    if (mobileMenu && mainNav) {
+      mobileMenu.onclick = () => mainNav.classList.toggle('open');
+    }
+
+    // Get report ID from URL query param `?id=...`
+    function getUrlReportId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id') || params.get('report_id');
+    }
+
+    // Initialize Leaflet Map
+    function initStatusMap(lat, lng) {
+      if (typeof L === 'undefined') return;
+      const targetLat = lat || 18.5204;
+      const targetLng = lng || 73.8567;
+
+      if (!statusMapInstance) {
+        statusMapInstance = L.map('statusMap', {
+          center: [targetLat, targetLng],
+          zoom: 14,
+          zoomControl: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a>'
+        }).addTo(statusMapInstance);
+
+        statusMarkerGroup = L.layerGroup().addTo(statusMapInstance);
+      } else {
+        statusMapInstance.setView([targetLat, targetLng], 14);
+      }
+    }
+
+    function renderMapMarkers(report, assignedResource, recommendedResource) {
+      if (!statusMapInstance || !statusMarkerGroup) return;
+      statusMarkerGroup.clearLayers();
+
+      const rLat = report.lat || 18.5204;
+      const rLng = report.lng || 73.8567;
+
+      // Incident Pin
+      const incidentIcon = L.divIcon({
+        className: 'incident-pin-wrap',
+        html: `<div style="width:34px;height:34px;background:#ef4444;color:white;border-radius:50%;border:3px solid white;display:grid;place-items:center;font-weight:800;font-size:16px;box-shadow:0 3px 12px rgba(0,0,0,0.4);">!</div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      L.marker([rLat, rLng], { icon: incidentIcon })
+        .bindPopup(`<b>Incident Location</b><br>${report.location}`)
+        .addTo(statusMarkerGroup);
+
+      // Responder Pin
+      const unit = assignedResource || (recommendedResource && recommendedResource.resource);
+      if (unit && unit.lat && unit.lng) {
+        const isAssigned = !!assignedResource;
+        const bg = isAssigned ? '#10b981' : '#0284c7';
+        const responderIcon = L.divIcon({
+          className: 'responder-pin-wrap',
+          html: `<div style="width:34px;height:34px;background:${bg};color:white;border-radius:8px;border:3px solid white;display:grid;place-items:center;font-size:16px;box-shadow:0 3px 12px rgba(0,0,0,0.4);">⛵</div>`,
+          iconSize: [34, 34],
+          iconAnchor: [17, 17]
+        });
+
+        L.marker([unit.lat, unit.lng], { icon: responderIcon })
+          .bindPopup(`<b>${isAssigned ? 'Assigned Unit' : 'Nearest Available Unit'}</b><br>${unit.name}`)
+          .addTo(statusMarkerGroup);
+
+        // Fit bounds to show both
+        const bounds = L.latLngBounds([[rLat, rLng], [unit.lat, unit.lng]]);
+        statusMapInstance.fitBounds(bounds, { padding: [30, 30] });
+      } else {
+        statusMapInstance.setView([rLat, rLng], 14);
+      }
+    }
+
+    async function loadReport(id) {
+      if (!id) return;
+      currentReportId = id.trim().replace(/^#/, '');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/reports/${currentReportId}`);
+        if (!res.ok) {
+          showToast(`Report not found (#${currentReportId}). Check ID and retry.`);
+          return;
+        }
+
+        const data = await res.json();
+        renderReportDetails(data);
+
+        // Update URL query string without reloading page
+        window.history.replaceState({}, '', `status.html?id=${data.id}`);
+
+        document.getElementById('reportDisplayArea').style.display = 'block';
+        document.getElementById('noReportArea').style.display = 'none';
+
+        // Start auto-refresh polling if not resolved
+        if (data.status !== 'resolved') {
+          if (!autoRefreshTimer) {
+            autoRefreshTimer = setInterval(() => refreshReport(data.id), 5000);
+          }
+        } else {
+          clearInterval(autoRefreshTimer);
+          autoRefreshTimer = null;
+        }
+      } catch (err) {
+        console.error('Failed to load report:', err);
+        showToast('Network error loading report.');
+      }
+    }
+
+    async function refreshReport(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/reports/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          renderReportDetails(data);
+          if (data.status === 'resolved') {
+            clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+          }
+        }
+      } catch (e) {
+        // silent background poll
+      }
+    }
+
+    function renderReportDetails(report) {
+      document.getElementById('dispReportId').textContent = `Incident #${report.id.substring(0, 8)}`;
+      document.getElementById('dispLocation').textContent = report.location || 'Location Not Specified';
+      document.getElementById('dispNeedType').textContent = report.need_type ? report.need_type.toUpperCase() : 'GENERAL RESCUE';
+      document.getElementById('dispDescription').textContent = report.description || 'No description provided.';
+
+      // Format timestamp
+      if (report.created_at) {
+        const d = new Date(report.created_at);
+        document.getElementById('dispTime').textContent = `${d.toLocaleDateString()} at ${d.toLocaleTimeString()}`;
+      }
+
+      // Photos
+      const photoContainer = document.getElementById('dispPhotoContainer');
+      const photoImg = document.getElementById('dispPhotoImg');
+      if (report.photo_url) {
+        photoContainer.style.display = 'block';
+        photoImg.src = `${API_BASE}${report.photo_url}`;
+      } else {
+        photoContainer.style.display = 'none';
+      }
+
+      // AI Triage
+      const urgency = (report.urgency || 'medium').toLowerCase();
+      const urgencyEl = document.getElementById('dispUrgencyTag');
+      urgencyEl.textContent = urgency.toUpperCase();
+      urgencyEl.className = `ai-tag urgency-${urgency}`;
+      document.getElementById('dispReasoning').textContent = report.reasoning || 'Standard municipal triage prioritization applied.';
+      document.getElementById('dispCredibility').textContent = `✓ Credibility Score: ${(report.credibility || 'HIGH').toUpperCase()}`;
+
+      // Stepper & Status Badge
+      const stepLogged = document.getElementById('stepLogged');
+      const stepTriage = document.getElementById('stepTriage');
+      const stepDispatched = document.getElementById('stepDispatched');
+      const stepResolved = document.getElementById('stepResolved');
+      const badge = document.getElementById('dispStatusBadge');
+
+      [stepLogged, stepTriage, stepDispatched, stepResolved].forEach(el => el.className = 'step-item');
+
+      // Logged and Triaged are always complete for any received report
+      stepLogged.classList.add('completed');
+      stepTriage.classList.add('completed');
+
+      const isAssigned = report.status === 'assigned' || !!report.assigned_resource;
+      const isResolved = report.status === 'resolved';
+
+      if (isResolved) {
+        stepDispatched.classList.add('completed');
+        stepResolved.classList.add('active', 'completed');
+        badge.className = 'status-badge-hero status-badge-resolved';
+        badge.innerHTML = '✓ Incident Resolved';
+      } else if (isAssigned) {
+        stepDispatched.classList.add('active');
+        badge.className = 'status-badge-hero status-badge-assigned';
+        badge.innerHTML = '🚨 Rescue Unit Dispatched';
+      } else {
+        stepTriage.classList.add('active');
+        badge.className = 'status-badge-hero status-badge-pending';
+        badge.innerHTML = '● Queued For Dispatch';
+      }
+
+      // Dispatch Unit Box
+      const unitBox = document.getElementById('dispUnitBox');
+      const unitHeading = document.getElementById('dispUnitHeading');
+      const unitDetails = document.getElementById('dispUnitDetails');
+      const unitExtra = document.getElementById('dispUnitExtra');
+
+      if (isResolved) {
+        unitBox.className = 'dispatch-box';
+        unitHeading.innerHTML = '✓ Mission Completed';
+        unitDetails.textContent = 'Rescue operation successfully concluded. Individuals verified safe and in secure area.';
+        unitExtra.textContent = '';
+      } else if (report.assigned_resource) {
+        const res = report.assigned_resource;
+        unitBox.className = 'dispatch-box';
+        unitHeading.innerHTML = `🚑 Assigned: ${res.name}`;
+        unitDetails.innerHTML = `<strong>Type:</strong> ${res.type.toUpperCase()} UNIT<br><strong>Location Base:</strong> ${res.location}`;
+        unitExtra.innerHTML = `Emergency Contact: ${res.contact || 'VHF Ch-16'} • Status: EN ROUTE`;
+      } else if (report.recommended_resource && report.recommended_resource.resource) {
+        const rec = report.recommended_resource;
+        unitBox.className = 'dispatch-box awaiting';
+        unitHeading.innerHTML = `📡 Nearest Unit: ${rec.resource.name}`;
+        unitDetails.innerHTML = `Municipal Command is currently assigning field squads. Closest asset is <strong>${rec.distance_km} km away</strong> (Estimated travel time: ~${rec.eta_minutes} mins).`;
+        unitExtra.innerHTML = `Standby Line: ${rec.resource.contact || 'Channel 16'}`;
+      } else {
+        unitBox.className = 'dispatch-box awaiting';
+        unitHeading.innerHTML = `📡 Municipal Dispatch Notified`;
+        unitDetails.textContent = 'Report has been prioritized by AI triage. Field dispatch coordinators are assigning the nearest squad.';
+        unitExtra.textContent = '';
+      }
+
+      // Coordinates & Map
+      const lat = report.lat;
+      const lng = report.lng;
+      if (lat && lng) {
+        document.getElementById('dispCoordinates').textContent = `GPS Pin: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      } else {
+        document.getElementById('dispCoordinates').textContent = 'City Center Geographic Reference (Pune Basin)';
+      }
+
+      initStatusMap(lat, lng);
+      renderMapMarkers(report, report.assigned_resource, report.recommended_resource);
+    }
+
+    // Load recent reports for directory list
+    async function loadRecentReports() {
+      const listEl = document.getElementById('recentReportsList');
+      if (!listEl) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/reports?limit=10`);
+        if (!res.ok) return;
+        const reports = await res.json();
+
+        if (!reports || reports.length === 0) {
+          listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">No citizen emergency reports yet.</div>';
+          return;
+        }
+
+        listEl.innerHTML = '';
+        reports.forEach((rep) => {
+          const item = document.createElement('div');
+          item.className = 'recent-item';
+          const urg = (rep.urgency || 'medium').toLowerCase();
+          const isAssigned = rep.status === 'assigned';
+          const isResolved = rep.status === 'resolved';
+          const statusText = isResolved ? 'Resolved' : isAssigned ? 'Dispatched' : 'Pending';
+          const statusColor = isResolved ? '#10b981' : isAssigned ? '#0284c7' : '#d97706';
+
+          item.innerHTML = `
+            <div class="recent-left">
+              <b>${escapeHtml(rep.location)} (#${rep.id.substring(0, 8)})</b>
+              <small>${escapeHtml(rep.description.substring(0, 75))}...</small>
+            </div>
+            <div class="recent-right">
+              <span class="ai-tag urgency-${urg}">${urg}</span>
+              <span style="font-size:11px; font-weight:700; color:${statusColor};">${statusText}</span>
+              <button class="small-btn" style="padding:6px 10px; font-size:11px;" onclick="loadReport('${rep.id}')">Track →</button>
+            </div>
+          `;
+          listEl.appendChild(item);
+        });
+      } catch (e) {
+        console.warn('Could not fetch recent reports:', e);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m]));
+    }
+
+    // Search button wiring
+    const btnSearch = document.getElementById('btnSearchIncident');
+    const inputSearch = document.getElementById('incidentSearchInput');
+    if (btnSearch && inputSearch) {
+      const doSearch = () => {
+        const val = inputSearch.value.trim();
+        if (!val) {
+          showToast('Please enter an Incident ID to search.');
+          return;
+        }
+        loadReport(val);
+      };
+      btnSearch.onclick = doSearch;
+      inputSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSearch();
+      });
+    }
+
+    // Copy ID button
+    const btnCopy = document.getElementById('btnCopyId');
+    if (btnCopy) {
+      btnCopy.onclick = () => {
+        if (currentReportId) {
+          navigator.clipboard.writeText(currentReportId);
+          showToast('Incident ID copied to clipboard!');
+        }
+      };
+    }
+
+    // Initial page load logic
+    const initialId = getUrlReportId();
+    if (initialId) {
+      inputSearch.value = initialId;
+      loadReport(initialId);
+    } else {
+      loadRecentReports();
+    }
+  </script>
+</body>
+
+</html>

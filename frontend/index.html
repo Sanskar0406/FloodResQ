@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071426" />
+  <title>FloodResQ — AI Flood Monitoring & Emergency Response</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Modal and Map Stacking Order */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999 !important;
+    }
+
+    .fake-map,
+    #mapViewContainer {
+      z-index: 1 !important;
+      isolation: isolate !important;
+    }
+
+    /* Command Center Modal Styles */
+    .cc-modal-box {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 70px rgba(0, 16, 32, 0.4);
+      position: relative;
+    }
+
+    .cc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .cc-head h2 {
+      margin: 0;
+      font-size: 22px;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cc-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .cc-filters button {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #475569;
+    }
+
+    .cc-filters button.active {
+      background: #0284c7;
+      color: white;
+      border-color: #0284c7;
+    }
+
+    .cc-body {
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 6px;
+    }
+
+    .incident-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .incident-item:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+    }
+
+    .urgency-tag {
+      text-align: center;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .urgency-critical {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #f87171;
+    }
+
+    .urgency-high {
+      background: #ffedd5;
+      color: #ea580c;
+      border: 1px solid #fb923c;
+    }
+
+    .urgency-medium {
+      background: #fef9c3;
+      color: #ca8a04;
+      border: 1px solid #facc15;
+    }
+
+    .urgency-low {
+      background: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #4ade80;
+    }
+
+    .incident-details h4 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      color: #0f172a;
+    }
+
+    .incident-details p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .incident-details small {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #0284c7;
+    }
+
+    .incident-actions {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+      min-width: 130px;
+    }
+
+    .btn-action-assign {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-action-resolve {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Map Popup / Tooltip */
+    .map-popup {
+      position: absolute;
+      bottom: 50px;
+      left: 15px;
+      background: rgba(7, 20, 38, 0.95);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #24d3ff;
+      max-width: 260px;
+      z-index: 20;
+      font-size: 11px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .map-popup.show {
+      display: block;
+    }
+
+    .map-popup h5 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      color: #24d3ff;
+    }
+
+    .map-popup p {
+      margin: 0 0 6px;
+      color: #cbd5e1;
+      font-size: 10px;
+    }
+
+    .map-popup small {
+      color: #94a3b8;
+    }
+
+    .map-popup .popup-close {
+      float: right;
+      cursor: pointer;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .map-pin {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .map-pin:hover {
+      transform: scale(1.2);
+    }
+
+    .loading-pulse {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="brand" href="index.html" title="FloodResQ — Faster Response. Safer Tomorrows.">
+      <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo">
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+
+    <nav id="mainNav">
+      <a class="active" href="#home">Home</a>
+      <a href="report.html">Report</a>
+      <a href="status.html">Track Status</a>
+      <a href="live-map.html">Live Map</a>
+      <a href="volunteer.html">Volunteer</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="sos" id="sosButton">🚨 Emergency SOS</button>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="eyebrow">AI-ASSISTED FLOOD MONITORING, RISK INTELLIGENCE & EMERGENCY RESPONSE</p>
+        <h1>Together<br>We Stay <span>Safer</span></h1>
+        <p class="hero-copy">Real-time data. Smarter decisions. Faster response.<br>
+          A unified platform connecting citizens, AI and emergency responders to build flood-resilient cities.</p>
+        <div class="hero-buttons">
+          <button class="btn btn-danger" id="helpButton">🚨 <span><b>I Need Help Now</b><small>60-sec Emergency
+                Report</small></span></button>
+          <a class="btn btn-outline" href="report.html">▤ <span><b>Report a Flood</b><small>Share Photos, Location &
+                Details</small></span></a>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div><strong id="statReports">1,246+</strong><span>Citizen Reports</span></div>
+        <div><strong id="statRescued">441</strong><span>People Rescued</span></div>
+        <div><strong id="statShelters">72</strong><span>Active Shelters</span></div>
+        <div><strong id="statTeams">18</strong><span>Rescue Teams</span></div>
+        <div><strong id="statCities">12</strong><span>Cities Covered</span></div>
+      </div>
+    </section>
+
+    <section class="section workflow">
+      <div class="section-heading">
+        <h2>How <span>FloodResQ</span> Works</h2>
+        <p>From a citizen report to real-world impact — powered by AI and real-time data.</p>
+      </div>
+      <div class="steps">
+        <article>
+          <div class="step-icon">📱</div><b>1. Citizen Report</b>
+          <p>Send a 60-sec report with location, photos or video.</p>
+        </article>
+        <i>→</i>
+        <article>
+          <div class="step-icon">🧠</div><b>2. AI Analysis</b>
+          <p>Verify, detect fake reports, assess risk and prioritize.</p>
+        </article>
+        <i>→</i>
+        <article>
+          <div class="step-icon">📍</div><b>3. Command Center</b>
+          <p>View live incidents, resources and flood-risk maps.</p>
+        </article>
+        <i>→</i>
+        <article>
+          <div class="step-icon">🚑</div><b>4. Resource Matching</b>
+          <p>Nearest teams, shelters and medical aid are assigned.</p>
+        </article>
+        <i>→</i>
+        <article>
+          <div class="step-icon">👥</div><b>5. Respond</b>
+          <p>Teams reach people and provide real-time updates.</p>
+        </article>
+        <i>→</i>
+        <article>
+          <div class="step-icon">✓</div><b>6. Safer Communities</b>
+          <p>Resolved incidents and data help predict future risks.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="dashboard section" id="live-map">
+      <!-- Live Flood Risk Map -->
+      <div class="map-card card">
+        <div class="card-head">
+          <div>
+            <h3>Live Flood Risk Map</h3>
+            <p>Real-time flood zones, incidents, rescue teams and essential resources.</p>
+          </div>
+          <button class="small-btn" id="btnRefreshMap">↻ Refresh Live Map</button>
+        </div>
+        <div class="fake-map" id="mapViewContainer">
+          <div class="map-grid"></div>
+          <div class="heat heat-a"></div>
+          <div class="heat heat-b"></div>
+          <div class="heat heat-c"></div>
+
+          <!-- Dynamic Pin Container -->
+          <div id="dynamicPinContainer">
+            <!-- Pins will be populated by script.js from /api/map-data -->
+          </div>
+
+          <div class="legend">
+            <b>Map Legend</b>
+            <span><i class="dot red"></i> High Risk Zone</span>
+            <span><i class="dot yellow"></i> Moderate Risk</span>
+            <span><i class="dot blue"></i> Low Risk</span>
+            <span>🚨 Active Incident</span><span>🚑 Rescue Team</span><span>🏠 Shelter</span><span>✚ Medical Aid</span>
+          </div>
+
+          <div class="search-map">
+            <input type="text" id="mapSearchInput" placeholder="Filter area (e.g. Sangam)..."
+              style="border:none; outline:none; width:130px; font-size:10px; background:transparent;" />
+            <button id="btnSearchMap">⌖</button>
+          </div>
+
+          <!-- Interactive Map Popup -->
+          <div class="map-popup" id="mapPopup">
+            <span class="popup-close" id="mapPopupClose">×</span>
+            <h5 id="mapPopupTitle">Sangam Bridge</h5>
+            <p id="mapPopupDesc">Family trapped on 1st floor balcony. Rescue squad dispatched.</p>
+            <small id="mapPopupMeta">Need: Rescue • Urgency: Critical</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Analytics -->
+      <div class="analytics card">
+        <div class="card-head">
+          <div>
+            <h3>Real-Time Flood Analytics</h3>
+            <p>Live data, AI insights and predictive intelligence.</p>
+          </div>
+        </div>
+        <div class="tabs" id="analyticsTabs">
+          <button class="selected" data-tab="water_level">Water Level</button>
+          <button data-tab="rainfall">Rainfall</button>
+          <button data-tab="risk_forecast">Risk Forecast</button>
+          <button data-tab="incidents">Incidents</button>
+        </div>
+        <div class="chart-box">
+          <small id="chartTitle">River Water Level (m) — Mula-Mutha River, Pune</small>
+          <div class="danger-line" id="chartDangerLine">Danger Level (6.0 m)</div>
+          <svg viewBox="0 0 500 180" preserveAspectRatio="none" aria-label="Water level trend">
+            <polyline id="chartPolyline" points="0,140 70,125 130,112 190,105 250,84 315,95 375,70 430,83 500,42"
+              fill="none" stroke="currentColor" stroke-width="5" />
+          </svg>
+          <div class="chart-value">
+            <strong id="chartValue">4.8 m</strong>
+            <span id="chartTrend">↑ Rising</span>
+          </div>
+          <div class="chart-times" id="chartTimes">
+            <span>12 AM</span><span>4 AM</span><span>8 AM</span><span>12 PM</span><span>4 PM</span><span>8 PM</span>
+          </div>
+        </div>
+        <div class="alert" id="chartAlertBox">
+          <b id="chartAlertTitle">⚠ Water level rising in Mula-Mutha River</b>
+          <span id="chartAlertDesc">High flood risk at low-lying areas.</span>
+          <a href="live-map.html" id="chartAlertLink">View Details →</a>
+        </div>
+      </div>
+
+      <!-- Live Command Center Card -->
+      <div class="command card">
+        <div class="card-head">
+          <div>
+            <h3>Live Command Center</h3>
+            <p>City-wide situation view for authorities.</p>
+          </div>
+        </div>
+        <div class="metrics">
+          <div><span>🔴</span><b id="metricCritical">2</b><small>Critical Incidents</small></div>
+          <div><span>🟠</span><b id="metricHigh">2</b><small>High Priority</small></div>
+          <div><span>🟡</span><b id="metricModerate">1</b><small>Moderate Priority</small></div>
+          <div><span>🔵</span><b id="metricRescueTeams">4</b><small>Active Rescue Teams</small></div>
+          <div><span>🟢</span><b id="metricShelterCap">820</b><small>Shelter Capacity (People)</small></div>
+        </div>
+        <button class="full-btn" id="btnOpenCommandCenter" style="border:none; cursor:pointer;"
+          onclick="window.location.href='live-map.html'">Open Command Center
+          →</button>
+      </div>
+    </section>
+
+    <section class="feature-grid section" id="resources">
+      <div class="feature card">
+        <h3>◉ Real-World Data</h3>
+        <div class="chips"><span>☁ Rainfall</span><span>≈ Water Level</span><span>⌁ Satellite / GIS</span><span>☀
+            Weather Forecast</span><span>▥ Historical Flood Data</span></div>
+      </div>
+      <div class="feature card">
+        <h3>◉ AI-Powered Intelligence</h3>
+        <div class="chips"><span>▣ Flood Risk Analysis</span><span>♙ Incident Verification</span><span>⌁ Priority
+            Scoring</span><span>◉ Duplicate Detection</span><span>◌ Risk Prediction</span></div>
+      </div>
+      <div class="feature card">
+        <h3>◉ Emergency Responders</h3>
+        <div class="chips"><span>🚑 Rescue Teams</span><span>🏠 Shelter Matching</span><span>✚ Medical
+            Aid</span><span>🧭 GPS Navigation</span><span>⏱ ETA Tracking</span></div>
+      </div>
+      <div class="feature card">
+        <h3>◉ Communities & Volunteers</h3>
+        <div class="chips"><span>⌖ Ground Reports</span><span>✓ Report Verification</span><span>🍱 Food &
+            Supplies</span><span>👥 Volunteer Network</span><span>↗ Shared Situation View</span></div>
+      </div>
+    </section>
+
+    <section class="impact section" id="about">
+      <div>
+        <h2>Real Impact, <span>Safer Cities</span></h2>
+        <p>Faster alerts. Better coordination. Stronger, more resilient communities.</p>
+      </div>
+      <div class="impact-items">
+        <div>🛡️<b>Save Lives</b><small>Earlier warnings protect people</small></div>
+        <div>⚡<b>Faster Response</b><small>Reduced response time</small></div>
+        <div>👥<b>Better Coordination</b><small>Citizens, responders & authorities</small></div>
+        <div>▥<b>Transparency</b><small>Open data and live tracking</small></div>
+        <div>⌁<b>Scalable</b><small>Adaptable to any city or district</small></div>
+      </div>
+    </section>
+
+    <section class="cta" id="contact">
+      <div>
+        <h2>Be Prepared. Be Part of the Solution.</h2>
+        <p>Report. Volunteer. Support. Together we can build flood-resilient cities.</p>
+      </div>
+      <div class="cta-buttons">
+        <a class="btn light" href="volunteer.html">👥 Join as Volunteer</a>
+        <a class="btn blue" href="report.html">▤ Report a Flood</a>
+      </div>
+    </section>
+  </main>
+
+  <footer style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center;">
+    <div class="footer-brand">
+      <img src="images/floodresq-full-logo-light.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="footer-logo">
+    </div>
+    <div class="social">in　𝕏　◎　▶</div>
+    <div class="copyright" style="width:100%;">© 2026 FloodResQ. All rights reserved.
+      <span>Privacy　|　Terms　|　Help</span>
+    </div>
+  </footer>
+
+  <!-- Emergency SOS Modal -->
+  <div class="modal" id="sosModal">
+    <div class="modal-box">
+      <button class="close" id="closeModal">×</button>
+      <div class="sos-icon">🚨</div>
+      <h2>Emergency Rescue Dispatch</h2>
+      <p>If you are in immediate danger, broadcast an emergency SOS with your live coordinates. Nearest rescue teams
+        will be alerted immediately.</p>
+      <div class="sos-actions">
+        <button class="btn btn-danger" id="btnInstantSOS">🚨 Send Instant SOS Now</button>
+        <button class="btn btn-outline dark" id="locationHelp">📍 Capture Location</button>
+        <a class="btn btn-outline" style="border-color:#ccc; color:#333;" href="report.html?sos=1">Detailed Report →</a>
+      </div>
+      <small id="locationStatus" style="display:block; margin-top:14px; font-weight:600; color:#0369a1;"></small>
+    </div>
+  </div>
+
+  <!-- Live Command Center Modal -->
+  <div class="modal" id="commandCenterModal">
+    <div class="cc-modal-box">
+      <div class="cc-head">
+        <h2><span>⚡</span> Flood Command Center — Active Incidents</h2>
+        <button class="close" id="closeCommandCenter" style="position:static; font-size:26px;">×</button>
+      </div>
+
+      <div class="cc-filters" id="ccFilters">
+        <button class="active" data-filter="all">All Incidents</button>
+        <button data-filter="critical">🔴 Critical</button>
+        <button data-filter="high">🟠 High Priority</button>
+        <button data-filter="rescue">🚑 Rescue</button>
+        <button data-filter="medical">✚ Medical</button>
+        <button data-filter="shelter">🏠 Shelter</button>
+      </div>
+
+      <div class="cc-body" id="commandCenterList">
+        <div style="text-align:center; padding:30px; color:#64748b;">Loading incident feed...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="mainToast">Notification</div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>

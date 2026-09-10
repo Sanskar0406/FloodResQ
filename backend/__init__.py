@@ -1,0 +1,7 @@
+# backend package
+import sys
+import os
+
+backend_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_parent not in sys.path:
+    sys.path.insert(0, backend_parent)

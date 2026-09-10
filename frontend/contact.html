@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071426" />
+  <title>Contact Us — FloodResQ</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --navy: #071426;
+      --navy-dark: #040c17;
+      --navy-light: #0d233e;
+      --cyan: #24d3ff;
+      --blue: #0284c7;
+      --blue-btn: #0284c7;
+      --red: #ef303d;
+      --text: #0d2340;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f4f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Top Navbar */
+    .navbar {
+      height: 70px;
+      background: var(--navy);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 3%;
+      gap: 24px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: auto;
+      text-decoration: none;
+      color: white;
+    }
+
+    .brand-logo {
+      height: 44px;
+      width: auto;
+      max-width: 240px;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .brand:hover .brand-logo {
+      transform: scale(1.02);
+      filter: brightness(1.08);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      line-height: 1;
+      background: linear-gradient(160deg, #1bd2ff, #0784d0);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 2px 10px rgba(27, 210, 255, 0.3);
+    }
+
+    .brand strong {
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+    }
+
+    .brand strong span {
+      color: var(--cyan);
+    }
+
+    .brand small {
+      display: block;
+      font-size: 9px;
+      color: #b9c9da;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    nav#mainNav {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+
+    nav#mainNav a {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e6eef7;
+      text-decoration: none;
+      padding: 8px 0;
+      transition: color 0.15s ease;
+      position: relative;
+    }
+
+    nav#mainNav a:hover,
+    nav#mainNav a.active {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    nav#mainNav a.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: var(--cyan);
+      border-radius: 2px;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .nav-search-btn {
+      background: none;
+      border: 0;
+      color: #b9c9da;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .nav-search-btn:hover {
+      color: white;
+    }
+
+    .nav-lang-select {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: white;
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .sos {
+      border: 0;
+      border-radius: 9px;
+      padding: 11px 18px;
+      background: var(--red);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(239, 48, 61, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .sos:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(239, 48, 61, 0.6);
+    }
+
+    .mobile-menu {
+      display: none;
+      background: none;
+      border: 0;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Hero Section */
+    .contact-hero {
+      position: relative;
+      background: linear-gradient(90deg, rgba(7, 20, 38, 0.94) 0%, rgba(7, 20, 38, 0.82) 48%, rgba(7, 20, 38, 0.45) 100%),
+        url('images/contact_hero_rescue.jpg') right center / cover no-repeat;
+      color: white;
+      padding: 50px 5% 45px;
+      overflow: hidden;
+      min-height: 380px;
+    }
+
+    .contact-hero-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-text-col {
+      max-width: 620px;
+    }
+
+    .hero-eyebrow {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .contact-hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      margin: 0 0 16px;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+
+    .contact-hero p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin: 0 0 28px;
+      max-width: 520px;
+    }
+
+    .hero-script-col {
+      text-align: right;
+      padding-right: 20px;
+    }
+
+    .script-text {
+      font-family: 'Caveat', cursive;
+      font-size: 36px;
+      line-height: 1.15;
+      color: #ffffff;
+      transform: rotate(-6deg);
+      text-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.4);
+      display: inline-block;
+      user-select: none;
+    }
+
+    .script-text span {
+      display: block;
+    }
+
+    /* 4 Hero Feature Pills */
+    .hero-features-bar {
+      max-width: 1200px;
+      margin: 32px auto 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .h-feat-pill {
+      background: rgba(7, 26, 48, 0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .h-feat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(2, 132, 199, 0.2);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .h-feat-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .h-feat-text small {
+      display: block;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+
+    /* Main Container Grid */
+    .contact-main {
+      max-width: 1200px;
+      margin: 36px auto 60px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* Left & Right Column Stacks */
+    .col-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Base White Card */
+    .c-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px 28px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .c-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .c-card-header-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #e0f2fe;
+      color: #0284c7;
+      display: grid;
+      place-items: center;
+      font-size: 19px;
+      flex-shrink: 0;
+    }
+
+    .c-card-header h2 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .c-card-header p {
+      margin: 3px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Contact Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .form-group label span {
+      color: #ef4444;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #0f172a;
+      outline: none;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: #ffffff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .phone-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .phone-code {
+      width: 85px !important;
+      background: #f8fafc;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .phone-input {
+      flex: 1;
+    }
+
+    .btn-send-message {
+      width: 100%;
+      background: #0284c7;
+      color: white;
+      border: 0;
+      border-radius: 9px;
+      padding: 13px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+      margin-top: 6px;
+    }
+
+    .btn-send-message:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
+    }
+
+    /* Connect With Us / Social */
+    .social-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .soc-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .soc-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .soc-li {
+      background: #0077b5;
+    }
+
+    .soc-x {
+      background: #000000;
+    }
+
+    .soc-ig {
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    }
+
+    .soc-yt {
+      background: #ff0000;
+    }
+
+    .soc-fb {
+      background: #1877f2;
+    }
+
+    .soc-wa {
+      background: #25d366;
+    }
+
+    /* Immediate Assistance 4 Emergency Cards */
+    .emergency-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .em-card {
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .em-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .em-card.red {
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
+    }
+
+    .em-card.blue {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+    }
+
+    .em-card.green {
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+    }
+
+    .em-card.orange {
+      background: #fff7ed;
+      border: 1px solid #ffedd5;
+    }
+
+    .em-card .em-icon {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .em-card.red .em-icon {
+      color: #ef4444;
+    }
+
+    .em-card.blue .em-icon {
+      color: #0284c7;
+    }
+
+    .em-card.green .em-icon {
+      color: #10b981;
+    }
+
+    .em-card.orange .em-icon {
+      color: #ea580c;
+    }
+
+    .em-card .em-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+
+    .em-card.red .em-label {
+      color: #dc2626;
+    }
+
+    .em-card.blue .em-label {
+      color: #0369a1;
+    }
+
+    .em-card.green .em-label {
+      color: #15803d;
+    }
+
+    .em-card.orange .em-label {
+      color: #c2410c;
+    }
+
+    .em-card .em-num {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .em-card.red .em-num {
+      color: #b91c1c;
+    }
+
+    .em-card.blue .em-num {
+      color: #0284c7;
+    }
+
+    .em-card.green .em-num {
+      color: #16a34a;
+    }
+
+    .em-card.orange .em-num {
+      color: #ea580c;
+    }
+
+    .em-card .em-sub {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    /* Our Office Card with Map */
+    .office-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .office-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .office-details h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .office-details p {
+      margin: 0 0 14px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #475569;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: #334155;
+      margin-bottom: 9px;
+      text-decoration: none;
+    }
+
+    .contact-item i {
+      font-style: normal;
+      color: #0284c7;
+      font-size: 14px;
+    }
+
+    .contact-item:hover {
+      color: #0284c7;
+    }
+
+    .btn-directions {
+      background: #0284c7;
+      color: white;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 10px;
+      transition: background 0.15s;
+    }
+
+    .btn-directions:hover {
+      background: #0369a1;
+    }
+
+    .office-map-container {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      height: 200px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    #officeMap {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-ext-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0284c7;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .map-ext-btn:hover {
+      background: white;
+      color: #0369a1;
+    }
+
+    /* FAQ Card */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .faq-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+      transition: border-color 0.2s;
+    }
+
+    .faq-item.open {
+      border-color: #0284c7;
+    }
+
+    .faq-question {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      user-select: none;
+      background: #fafbfc;
+    }
+
+    .faq-question:hover {
+      background: #f1f5f9;
+    }
+
+    .faq-chevron {
+      font-size: 12px;
+      color: #64748b;
+      transition: transform 0.2s;
+    }
+
+    .faq-item.open .faq-chevron {
+      transform: rotate(180deg);
+      color: #0284c7;
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 12px 16px 14px;
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.55;
+      border-top: 1px solid #f1f5f9;
+      background: #ffffff;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    .faq-footer-link {
+      display: block;
+      text-align: right;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0284c7;
+      text-decoration: none;
+      margin-top: 14px;
+    }
+
+    .faq-footer-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Footer */
+    footer.contact-footer {
+      background: var(--navy);
+      color: white;
+      padding: 40px 5% 24px;
+      margin-top: 40px;
+    }
+
+    .footer-top {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.2fr 2fr 1.2fr;
+      align-items: center;
+      gap: 30px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-center {
+      text-align: center;
+    }
+
+    .footer-nav {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-nav a:hover {
+      color: var(--cyan);
+    }
+
+    .footer-tagline {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .footer-right {
+      text-align: right;
+    }
+
+    .footer-script {
+      font-family: 'Caveat', cursive;
+      font-size: 32px;
+      color: var(--cyan);
+      transform: rotate(-4deg);
+      display: inline-block;
+      user-select: none;
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 18px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .footer-bottom a {
+      color: #94a3b8;
+    }
+
+    .footer-bottom a:hover {
+      color: white;
+    }
+
+    /* Toast Notification */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #071426;
+      border: 1px solid #1e3a5f;
+      color: white;
+      padding: 14px 22px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast-popup.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    @media (max-width: 992px) {
+      .contact-main {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-features-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .emergency-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .footer-top {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .footer-right {
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .contact-hero {
+        padding: 35px 5% 30px;
+      }
+
+      .contact-hero h1 {
+        font-size: 34px;
+      }
+
+      .hero-script-col {
+        display: none;
+      }
+
+      .hero-features-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .office-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .office-map-container {
+        height: 160px;
+      }
+
+      .emergency-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <a class="brand" href="index.html" title="FloodResQ — Faster Response. Safer Tomorrows.">
+      <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo">
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+
+    <nav id="mainNav">
+      <a href="index.html">Home</a>
+      <a href="report.html">Report</a>
+      <a href="status.html">Track Status</a>
+      <a href="live-map.html">Live Map</a>
+      <a href="volunteer.html">Volunteer</a>
+      <a class="active" href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="sos" id="sosButton" onclick="window.location.href='report.html?sos=1'">🚨 Emergency SOS</button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="contact-hero">
+    <div class="contact-hero-content">
+      <div class="hero-text-col">
+        <div class="hero-eyebrow">GET IN TOUCH</div>
+        <h1>We're Here to Help</h1>
+        <p>Have a question, suggestion or want to collaborate? Reach out to us — together we can build safer, more
+          resilient communities.</p>
+      </div>
+
+      <div class="hero-script-col">
+        <div class="script-text">
+          <span>Questions</span>
+          <span>Ideas</span>
+          <span>Partnerships</span>
+          <span>We're Listening</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 Value Feature Pills -->
+    <div class="hero-features-bar">
+      <div class="h-feat-pill">
+        <div class="h-feat-icon">💬</div>
+        <div class="h-feat-text">
+          <strong>Quick Response</strong>
+          <small>We're here for you</small>
+        </div>
+      </div>
+
+      <div class="h-feat-pill">
+        <div class="h-feat-icon">👥</div>
+        <div class="h-feat-text">
+          <strong>Dedicated Support</strong>
+          <small>For citizens & partners</small>
+        </div>
+      </div>
+
+      <div class="h-feat-pill">
+        <div class="h-feat-icon">💡</div>
+        <div class="h-feat-text">
+          <strong>Ideas Welcome</strong>
+          <small>Help us improve</small>
+        </div>
+      </div>
+
+      <div class="h-feat-pill">
+        <div class="h-feat-icon">💙</div>
+        <div class="h-feat-text">
+          <strong>Stronger Together</strong>
+          <small>Communities first</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Grid -->
+  <main class="contact-main">
+    <!-- Left Column: Send us a Message + Connect With Us -->
+    <div class="col-stack">
+      <!-- Send us a Message Card -->
+      <section class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-header-icon">✈</div>
+          <div>
+            <h2>Send us a Message</h2>
+            <p>Fill out the form and we'll get back to you as soon as possible.</p>
+          </div>
+        </div>
+
+        <form id="contactForm" onsubmit="handleContactSubmit(event)">
+          <div class="form-group">
+            <label for="contactName">Full Name <span>*</span></label>
+            <input type="text" id="contactName" placeholder="Enter your full name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="contactEmail">Email Address <span>*</span></label>
+            <input type="email" id="contactEmail" placeholder="Enter your email address" required />
+          </div>
+
+          <div class="form-group">
+            <label for="contactPhone">Phone Number</label>
+            <div class="phone-row">
+              <select class="phone-code" id="phoneCode">
+                <option value="+91">+91 ⌄</option>
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+971">+971</option>
+              </select>
+              <input type="tel" class="phone-input" id="contactPhone" placeholder="Enter your phone number" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="contactSubject">Subject <span>*</span></label>
+            <select id="contactSubject" required>
+              <option value="" disabled selected>Select a subject</option>
+              <option value="Emergency Rescue Coordination">Emergency Rescue Coordination</option>
+              <option value="Volunteer Brigades & Registration">Volunteer Brigades & Registration</option>
+              <option value="Partnership & Municipal Triage">Partnership & Municipal Triage</option>
+              <option value="Technical Issue or Bug Report">Technical Issue or Bug Report</option>
+              <option value="General Community Feedback">General Community Feedback</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="contactMessage">Message <span>*</span></label>
+            <textarea id="contactMessage" rows="5" placeholder="Write your message here..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-send-message" id="btnSendMessage">
+            <span>✈</span> Send Message
+          </button>
+        </form>
+      </section>
+
+      <!-- Connect With Us Card -->
+      <section class="c-card">
+        <div class="c-card-header">
+          <div class="c-card-header-icon" style="background:#eff6ff; color:#2563eb;">🔗</div>
+          <div>
+            <h2>Connect With Us</h2>
+            <p>Follow us for real-time updates, alerts and community stories.</p>
+          </div>
+        </div>
+
+        <div class="social-row">
+          <a class="soc-btn soc-li" href="https://linkedin.com" target="_blank" rel="noopener" title="LinkedIn">in</a>
+          <a class="soc-btn soc-x" href="https://twitter.com" target="_blank" rel="noopener" title="X (Twitter)">𝕏</a>
+          <a class="soc-btn soc-ig" href="https://instagram.com" target="_blank" rel="noopener" title="Instagram">📸</a>
+          <a class="soc-btn soc-yt" href="https://youtube.com" target="_blank" rel="noopener" title="YouTube">▶</a>
+          <a class="soc-btn soc-fb" href="https://facebook.com" target="_blank" rel="noopener" title="Facebook">f</a>
+          <a class="soc-btn soc-wa" href="https://whatsapp.com" target="_blank" rel="noopener" title="WhatsApp">💬</a>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Immediate Assistance + Our Office + FAQ -->
+    <div class="col-stack">
+      <!-- Need Immediate Assistance Card -->
+      <section class="c-card">
+        <div class="c-card-header" style="margin-bottom:12px;">
+          <div class="c-card-header-icon" style="background:#f0f9ff; color:#0284c7;">🎧</div>
+          <div>
+            <h2>Need Immediate Assistance?</h2>
+            <p>For life-threatening situations or urgent rescue, use these emergency contacts.</p>
+          </div>
+        </div>
+
+        <div class="emergency-grid">
+          <!-- 1. 112 -->
+          <a class="em-card red" href="tel:112" title="Call Emergency Helpline">
+            <div class="em-icon">📞</div>
+            <div class="em-label">Emergency Helpline</div>
+            <div class="em-num">112</div>
+            <div class="em-sub">(24×7)</div>
+          </a>
+
+          <!-- 2. 1070 -->
+          <a class="em-card blue" href="tel:1070" title="Call Disaster Management">
+            <div class="em-icon">🚑</div>
+            <div class="em-label">Disaster Management</div>
+            <div class="em-num">1070</div>
+            <div class="em-sub">(24×7)</div>
+          </a>
+
+          <!-- 3. 108 -->
+          <a class="em-card green" href="tel:108" title="Call Medical Emergency">
+            <div class="em-icon">➕</div>
+            <div class="em-label">Medical Emergency</div>
+            <div class="em-num">108</div>
+            <div class="em-sub">(24×7)</div>
+          </a>
+
+          <!-- 4. 100 -->
+          <a class="em-card orange" href="tel:100" title="Call Police Control Room">
+            <div class="em-icon">🛡️</div>
+            <div class="em-label">Police Control Room</div>
+            <div class="em-num">100</div>
+            <div class="em-sub">(24×7)</div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Our Office Card -->
+      <section class="c-card">
+        <div class="c-card-header" style="margin-bottom:16px;">
+          <div class="c-card-header-icon" style="background:#e0f2fe; color:#0284c7;">📍</div>
+          <div>
+            <h2>Our Office</h2>
+          </div>
+        </div>
+
+        <div class="office-layout">
+          <!-- Left Office Info -->
+          <div class="office-details">
+            <div>
+              <h3>FloodResQ Operations Center</h3>
+              <p>3rd Floor, Innovation Hub,<br>Pune, Maharashtra - 411001<br>India</p>
+
+              <a class="contact-item" href="mailto:support@floodresq.org">
+                <i>✉</i> support@floodresq.org
+              </a>
+              <a class="contact-item" href="tel:+912012345678">
+                <i>📞</i> +91 20 1234 5678
+              </a>
+              <a class="contact-item" href="index.html">
+                <i>🌐</i> www.floodresq.org
+              </a>
+            </div>
+
+            <button class="btn-directions"
+              onclick="window.open('https://www.google.com/maps/search/?api=1&query=Pune+Maharashtra+India', '_blank')">
+              <span>✈</span> Get Directions
+            </button>
+          </div>
+
+          <!-- Right Interactive Pune Map -->
+          <div class="office-map-container">
+            <div id="officeMap"></div>
+            <a class="map-ext-btn" href="https://www.google.com/maps/search/?api=1&query=Shivajinagar+Pune+Maharashtra"
+              target="_blank" rel="noopener">
+              View on Google Maps ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Frequently Asked Questions Accordion -->
+      <section class="c-card">
+        <div class="c-card-header" style="margin-bottom:16px;">
+          <div class="c-card-header-icon" style="background:#e0f2fe; color:#0284c7;">❓</div>
+          <div>
+            <h2>Frequently Asked Questions</h2>
+            <p>Quick answers to common queries.</p>
+          </div>
+        </div>
+
+        <div class="faq-list">
+          <!-- FAQ 1 -->
+          <div class="faq-item open">
+            <div class="faq-question" onclick="toggleFaq(this)">
+              <span>How can I report a flood incident?</span>
+              <span class="faq-chevron">▼</span>
+            </div>
+            <div class="faq-answer">
+              You can report incidents in real time using our "Report" page or by clicking the Emergency SOS button. Our
+              AI system verifies water depth, geotags the risk, and alerts municipal rescue brigades immediately.
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+              <span>Can I volunteer with FloodResQ?</span>
+              <span class="faq-chevron">▼</span>
+            </div>
+            <div class="faq-answer">
+              Yes! We actively register boat operators, medical responders, food relief organizers, and local
+              neighborhood
+              captains. Click on "Volunteer" in the navigation bar to sign up.
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+              <span>How can my organization partner with you?</span>
+              <span class="faq-chevron">▼</span>
+            </div>
+            <div class="faq-answer">
+              Municipal corporations, hospital networks, NGOs, and corporate emergency units can connect their telemetry
+              or dispatch feeds with FloodResQ. Submit the contact form above with subject "Partnership & Municipal
+              Triage".
+            </div>
+          </div>
+        </div>
+
+        <a class="faq-footer-link" href="#faq" onclick="toggleAllFaqs(event)">View All FAQs →</a>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer identical to image -->
+  <footer class="contact-footer">
+    <div class="footer-top">
+      <div class="brand">
+        <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo" style="height:44px;width:auto;">
+      </div>
+
+      <div class="footer-center">
+        <nav class="footer-nav">
+          <a href="index.html">Home</a> |
+          <a href="report.html">Report</a> |
+          <a href="live-map.html">Live Map</a> |
+          <a href="volunteer.html">Volunteer</a> |
+          <a href="contact.html">Contact</a>
+        </nav>
+        <div class="footer-tagline">Real-time data. Real people. A safer tomorrow.</div>
+      </div>
+
+      <div class="footer-right">
+        <div class="footer-script">Stronger Together</div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>© 2026 FloodResQ. All rights reserved.</div>
+      <div>
+        <a href="#privacy">Privacy Policy</a> &nbsp;|&nbsp; <a href="#terms">Terms of Use</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div class="toast-popup" id="contactToast">
+    <span style="font-size:18px;">✅</span>
+    <span id="toastText">Message sent! We'll reply within 24 hours.</span>
+  </div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script>
+    // FAQ Accordion Toggle
+    function toggleFaq(el) {
+      const item = el.closest('.faq-item');
+      item.classList.toggle('open');
+    }
+
+    function toggleAllFaqs(e) {
+      e.preventDefault();
+      document.querySelectorAll('.faq-item').forEach(item => item.classList.add('open'));
+      showToast('All FAQ questions expanded');
+    }
+
+    // Interactive Office Leaflet Map (Pune, Maharashtra)
+    document.addEventListener('DOMContentLoaded', () => {
+      const puneCoords = [18.5204, 73.8567]; // Pune Operations Center
+      const map = L.map('officeMap', {
+        center: puneCoords,
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      // Custom Red Pin Marker
+      const pinIcon = L.divIcon({
+        className: 'office-custom-marker',
+        html: `<div style="background:#ef4444; width:28px; height:28px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid white; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:grid; place-items:center;">
+                 <div style="width:8px; height:8px; background:white; border-radius:50%; transform:rotate(45deg);"></div>
+               </div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28]
+      });
+
+      const marker = L.marker(puneCoords, { icon: pinIcon }).addTo(map);
+      marker.bindPopup('<b>FloodResQ Operations Center</b><br>Innovation Hub, Pune').openPopup();
+
+      // Landmarks
+      const landmarks = [
+        { name: 'Shaniwar Wada', coords: [18.5196, 73.8553] },
+        { name: 'Deccan Gymkhana', coords: [18.5173, 73.8415] },
+        { name: 'Koregaon Park', coords: [18.5362, 73.8940] },
+        { name: 'Aga Khan Palace', coords: [18.5524, 73.9015] }
+      ];
+
+      landmarks.forEach(lm => {
+        L.circleMarker(lm.coords, {
+          radius: 5,
+          color: '#3b82f6',
+          fillColor: '#60a5fa',
+          fillOpacity: 0.8,
+          weight: 1.5
+        }).addTo(map).bindTooltip(lm.name, { permanent: false, direction: 'top' });
+      });
+
+      // Mobile Menu Toggle
+      const mobileBtn = document.getElementById('mobileMenu');
+      const mainNav = document.getElementById('mainNav');
+      if (mobileBtn && mainNav) {
+        mobileBtn.addEventListener('click', () => {
+          mainNav.classList.toggle('open');
+        });
+      }
+    });
+
+    // Contact Form Submission Handler
+    function handleContactSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSendMessage');
+      const name = document.getElementById('contactName').value.trim();
+      const email = document.getElementById('contactEmail').value.trim();
+      const subject = document.getElementById('contactSubject').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Sending Message...';
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✈</span> Send Message';
+        document.getElementById('contactForm').reset();
+        showToast(`Thank you, ${name}! Your message regarding "${subject}" has been received.`);
+      }, 900);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('contactToast');
+      document.getElementById('toastText').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071426" />
+  <title>Report Flood Emergency — FloodResQ</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999 !important;
+    }
+
+    #reportMap {
+      height: 320px;
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 14px;
+      border: 1.5px solid #bcd3e6;
+      box-shadow: 0 4px 18px rgba(7, 20, 38, 0.08);
+      z-index: 1;
+      isolation: isolate;
+    }
+
+    .custom-gps-pin {
+      width: 36px;
+      height: 36px;
+      background: #ef303d;
+      color: white;
+      border: 3px solid white;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      box-shadow: 0 4px 15px rgba(239, 48, 61, 0.6);
+      cursor: grab;
+      animation: pulseMarker 1.8s infinite;
+    }
+
+    @keyframes pulseMarker {
+
+      0%,
+      100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(239, 48, 61, 0.6);
+      }
+
+      50% {
+        transform: scale(1.12);
+        box-shadow: 0 6px 22px rgba(239, 48, 61, 0.85);
+      }
+    }
+
+    .map-helper-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 9px 14px;
+    }
+
+    .result-card {
+      display: none;
+      background: #ffffff;
+      border: 2px solid #24d3ff;
+      border-radius: 14px;
+      padding: 26px;
+      margin-top: 20px;
+      box-shadow: 0 10px 30px #07142618;
+    }
+
+    .result-card.show {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-critical {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #f87171;
+    }
+
+    .badge-high {
+      background: #ffedd5;
+      color: #ea580c;
+      border: 1px solid #fb923c;
+    }
+
+    .badge-medium {
+      background: #fef9c3;
+      color: #ca8a04;
+      border: 1px solid #facc15;
+    }
+
+    .badge-low {
+      background: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #4ade80;
+    }
+
+    .matched-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .matched-box h4 {
+      margin: 0 0 6px;
+      color: #166534;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matched-box p {
+      margin: 3px 0;
+      font-size: 12px;
+      color: #374151;
+    }
+
+    .photo-preview-wrap {
+      position: relative;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .photo-preview-wrap img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #bcd3e6;
+    }
+
+    .photo-remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ef303d;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ffffffaa;
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="navbar">
+    <a class="brand" href="index.html" title="FloodResQ — Faster Response. Safer Tomorrows.">
+      <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo">
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+
+    <nav id="mainNav">
+      <a href="index.html">Home</a>
+      <a class="active" href="report.html">Report</a>
+      <a href="status.html">Track Status</a>
+      <a href="live-map.html">Live Map</a>
+      <a href="volunteer.html">Volunteer</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="sos" id="sosNavButton">🚨 Emergency SOS</button>
+    </div>
+  </header>
+
+  <main class="report-main">
+    <section class="report-intro">
+      <p class="eyebrow">CITIZEN EMERGENCY REPORTING & AI DISPATCH</p>
+      <h1>Report a <span>Flood Situation</span></h1>
+      <p>Pin your exact location on the live map, describe your situation, and upload photos. Our AI scores emergency
+        urgency and dispatches the nearest rescue units.</p>
+    </section>
+
+    <form class="report-form" id="reportForm" onsubmit="return false;">
+      <!-- Location Section with Real Interactive Leaflet Map -->
+      <div class="form-card">
+        <h2>📍 1. Where is the Incident?</h2>
+        <div class="location-row">
+          <div class="grow field">
+            <label for="locationInput">Specific Area, Landmark or Street Name *</label>
+            <input type="text" id="locationInput" placeholder="e.g., Sangam Bridge near riverside road, Pune"
+              required />
+          </div>
+          <button type="button" class="small-btn" id="btnGetLocation" style="height: 42px; margin-bottom: 2px;">
+            ⌖ Use My Current GPS
+          </button>
+        </div>
+
+        <!-- Real Leaflet Map Container -->
+        <div id="reportMap"></div>
+
+        <div class="map-helper-bar">
+          <div id="coordsText" style="font-size:12px; color:#0369a1; font-weight:600;">
+            📍 Click anywhere on the map or drag the pin to set your exact location
+          </div>
+          <span style="font-size:11px; color:#64748b;">
+            🗺️ OpenStreetMap • Drag pin to refine
+          </span>
+        </div>
+      </div>
+
+      <!-- Need Type Section -->
+      <div class="form-card">
+        <h2>🚑 2. What Emergency Assistance is Needed?</h2>
+        <label>Select primary assistance type *</label>
+        <div class="option-grid">
+          <label style="cursor: pointer;">
+            <input type="radio" name="needType" value="rescue" checked />
+            <b>🚨 Immediate Rescue</b>
+            <small style="display:block; color:var(--muted); font-size:10px; margin-top:3px;">Trapped, strong current,
+              boat needed</small>
+          </label>
+          <label style="cursor: pointer;">
+            <input type="radio" name="needType" value="medical" />
+            <b>✚ Medical Evacuation</b>
+            <small style="display:block; color:var(--muted); font-size:10px; margin-top:3px;">Injuries, medication,
+              ambulance</small>
+          </label>
+          <label style="cursor: pointer;">
+            <input type="radio" name="needType" value="shelter" />
+            <b>🏠 Emergency Shelter</b>
+            <small style="display:block; color:var(--muted); font-size:10px; margin-top:3px;">Displaced families, dry
+              safe haven</small>
+          </label>
+          <label style="cursor: pointer;">
+            <input type="radio" name="needType" value="food" />
+            <b>🍱 Food & Clean Water</b>
+            <small style="display:block; color:var(--muted); font-size:10px; margin-top:3px;">Drinking water, ration
+              packs</small>
+          </label>
+        </div>
+      </div>
+
+      <!-- Situation Details -->
+      <div class="form-card">
+        <h2>📝 3. Describe What is Happening</h2>
+        <label for="descriptionInput">Situation Details (water level, number of people, urgent conditions) *</label>
+        <textarea id="descriptionInput" rows="4"
+          placeholder="e.g. Water is rising fast, waist-deep. 3 adults and 1 infant stuck on first floor balcony. Power cut, current is strong."
+          required></textarea>
+
+        <div class="ai-preview" id="aiLiveHint">
+          <span>🧠</span>
+          <div>
+            <b id="aiHintTitle">AI Triage Active</b>
+            <small id="aiHintDesc">Our NLP intelligence automatically scores urgency (critical, high, medium) based on
+              trapped status and water levels.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optional Photo Upload -->
+      <div class="form-card">
+        <h2>📷 4. Add a Photo of Flood Level <span
+            style="font-weight:400; color:var(--muted); font-size:12px;">(Optional)</span></h2>
+        <div class="upload" id="uploadZone">
+          <div>📸</div>
+          <b>Click or drag & drop a photo here</b>
+          <span>Helps responders instantly verify water height & approach route</span>
+          <input type="file" id="photoInput" accept="image/*" />
+        </div>
+        <div class="photo-preview-wrap" id="photoPreviewWrap">
+          <img id="photoPreviewImg" src="" alt="Flood photo preview" />
+          <button type="button" class="photo-remove-btn" id="btnRemovePhoto" title="Remove photo">✕</button>
+        </div>
+      </div>
+
+      <!-- Priority Note -->
+      <div class="priority-note">
+        <span>⚡</span>
+        <div>
+          <b>60-Second Rapid Emergency Routing</b>
+          <p>Upon submission, our AI verifies credibility, prioritizes urgency, and notifies the nearest available
+            municipal response station.</p>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="submit-report" id="btnSubmitReport">
+        🚨 Submit Emergency Report Now
+      </button>
+
+      <p class="privacy-note">🔒 Your report is shared directly with authorized emergency response teams and municipal
+        flood controllers.</p>
+
+      <!-- Submission Result Display -->
+      <div class="result-card" id="submissionResult">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <div>
+            <h3 style="margin:0 0 4px; font-size:20px; color:#0d2340;">✓ Emergency Report Dispatched</h3>
+            <small style="color:var(--muted);" id="resReportId">Incident ID: #</small>
+          </div>
+          <span class="badge badge-critical" id="resUrgencyBadge">CRITICAL</span>
+        </div>
+
+        <p id="resReasoning"
+          style="font-size:13px; color:#374151; background:#f8fafc; padding:10px 12px; border-radius:8px; margin:10px 0;">
+        </p>
+
+        <div class="matched-box" id="resMatchedContainer">
+          <h4><span>🚑</span> Nearest Assigned / Recommended Responder</h4>
+          <p id="resMatchedName"><strong>Unit:</strong> Searching...</p>
+          <p id="resMatchedDistance"><strong>Distance:</strong> Calculating...</p>
+          <p id="resMatchedContact"><strong>Emergency Contact:</strong> Radio / Line</p>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
+          <a id="btnGoStatusPage" href="status.html" class="btn btn-danger"
+            style="flex:1.2; justify-content:center; padding:13px; font-weight:800; min-width:220px; font-size:13px;">
+            🔍 Track Live Incident Status Page →
+          </a>
+          <a href="live-map.html" class="btn btn-outline dark"
+            style="flex:1; justify-content:center; padding:13px; min-width:160px; font-size:13px;">
+            🗺️ View on Live Map
+          </a>
+          <button type="button" class="btn btn-outline dark"
+            style="flex:1; justify-content:center; padding:13px; min-width:160px; font-size:13px;"
+            onclick="window.location.reload();">
+            ＋ Submit Another
+          </button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <div class="toast" id="toastMessage">Alert Notification</div>
+
+  <!-- SOS Modal -->
+  <div class="modal" id="sosModal">
+    <div class="modal-box">
+      <button class="close" id="closeModal">×</button>
+      <div class="sos-icon">🚨</div>
+      <h2>Immediate Emergency Rescue</h2>
+      <p>If you or someone nearby is in immediate life-threatening danger, trigger instant SOS dispatch with your
+        current coordinates.</p>
+      <div class="sos-actions">
+        <button class="btn btn-danger" id="sosInstantBtn">🚨 Send Instant SOS Now</button>
+        <button class="btn btn-outline dark" id="sosLocationBtn">📍 Capture GPS</button>
+      </div>
+      <small id="sosModalStatus" style="display:block; margin-top:12px; color:#0284c7; font-weight:600;"></small>
+    </div>
+  </div>
+
+  <!-- Leaflet Map Library -->
+  <script src="vendor/leaflet/leaflet.js"></script>
+
+  <script>
+    // Determine API Base URL dynamically:
+    // If served from FastAPI directly (port 8000), use relative path ''.
+    // If served from VS Code Live Server (port 5500, 5501), Vite, or file://, target backend on port 8000.
+    const API_BASE = (() => {
+      if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
+      if (window.location.port && window.location.port !== '8000') {
+        const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? window.location.hostname
+          : '127.0.0.1';
+        return `http://${host}:8000`;
+      }
+      return '';
+    })();
+
+    let capturedLat = 18.5204;
+    let capturedLng = 73.8567;
+    let selectedPhotoFile = null;
+    let map = null;
+    let pinMarker = null;
+
+    // Toast helper
+    function showToast(msg, duration = 4000) {
+      const toast = document.getElementById('toastMessage');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    // Initialize Interactive Leaflet Map
+    function initMap() {
+      const defaultLat = 18.5204;
+      const defaultLng = 73.8567;
+
+      map = L.map('reportMap', {
+        center: [defaultLat, defaultLng],
+        zoom: 13,
+        zoomControl: true
+      });
+
+      // High-clarity OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Custom Glowing Pin Icon
+      const pinIcon = L.divIcon({
+        className: 'custom-pin-wrap',
+        html: '<div class="custom-gps-pin">📍</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36]
+      });
+
+      pinMarker = L.marker([defaultLat, defaultLng], {
+        icon: pinIcon,
+        draggable: true
+      }).addTo(map);
+
+      // Update position on drag
+      pinMarker.on('dragend', (e) => {
+        const pos = pinMarker.getLatLng();
+        setMapPosition(pos.lat, pos.lng, true);
+      });
+
+      // Update position on map click
+      map.on('click', (e) => {
+        setMapPosition(e.latlng.lat, e.latlng.lng, true);
+      });
+    }
+
+    function setMapPosition(lat, lng, fly = false) {
+      capturedLat = lat;
+      capturedLng = lng;
+
+      if (pinMarker) {
+        pinMarker.setLatLng([lat, lng]);
+      }
+
+      if (fly && map) {
+        map.flyTo([lat, lng], Math.max(map.getZoom(), 14), { duration: 1.0 });
+      }
+
+      const coordsEl = document.getElementById('coordsText');
+      if (coordsEl) {
+        coordsEl.innerHTML = `📍 GPS Fixed: <b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b> (Click or drag to move)`;
+      }
+
+      // Reverse geocode to suggest landmark name if input is empty
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.display_name) {
+            const parts = data.display_name.split(',');
+            const shortArea = parts.slice(0, 3).join(',').trim();
+            const locInput = document.getElementById('locationInput');
+            if (locInput && (!locInput.value || locInput.value.includes('Pinned'))) {
+              locInput.value = shortArea;
+            }
+          }
+        })
+        .catch(() => { });
+    }
+
+    // Geolocation button
+    const btnGetLocation = document.getElementById('btnGetLocation');
+    function requestCoords() {
+      const coordsText = document.getElementById('coordsText');
+      if (!navigator.geolocation) {
+        if (coordsText) coordsText.textContent = "Geolocation is not supported by your browser.";
+        return;
+      }
+      if (coordsText) coordsText.textContent = "Requesting high-accuracy GPS coordinates…";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setMapPosition(pos.coords.latitude, pos.coords.longitude, true);
+          showToast("GPS coordinates locked onto map!");
+        },
+        (err) => {
+          setMapPosition(18.5204, 73.8567, true);
+          showToast("Location denied — Defaulted to Pune city center.");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+    if (btnGetLocation) btnGetLocation.onclick = requestCoords;
+
+    // Mobile menu toggle
+    const menu = document.getElementById('mobileMenu');
+    const nav = document.getElementById('mainNav');
+    if (menu) menu.onclick = () => nav.classList.toggle('open');
+
+    // Auto check if URL has ?sos=1
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sos') === '1') {
+      const rescueRadio = document.querySelector('input[name="needType"][value="rescue"]');
+      if (rescueRadio) rescueRadio.checked = true;
+      document.getElementById('descriptionInput').value = "CRITICAL EMERGENCY: Immediate rescue required. Water rapidly rising.";
+      requestCoords();
+    }
+
+    // Photo drag & drop
+    const uploadZone = document.getElementById('uploadZone');
+    const photoInput = document.getElementById('photoInput');
+    const photoPreviewWrap = document.getElementById('photoPreviewWrap');
+    const photoPreviewImg = document.getElementById('photoPreviewImg');
+    const btnRemovePhoto = document.getElementById('btnRemovePhoto');
+
+    if (uploadZone && photoInput) {
+      uploadZone.onclick = () => photoInput.click();
+      photoInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          selectedPhotoFile = file;
+          const reader = new FileReader();
+          reader.onload = (re) => {
+            photoPreviewImg.src = re.target.result;
+            photoPreviewWrap.style.display = 'block';
+            uploadZone.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+    }
+
+    if (btnRemovePhoto) {
+      btnRemovePhoto.onclick = () => {
+        selectedPhotoFile = null;
+        photoInput.value = "";
+        photoPreviewWrap.style.display = 'none';
+        uploadZone.style.display = 'block';
+      };
+    }
+
+    // Form Submission
+    const reportForm = document.getElementById('reportForm');
+    const btnSubmit = document.getElementById('btnSubmitReport');
+    const resultCard = document.getElementById('submissionResult');
+
+    if (reportForm) {
+      reportForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const locationVal = document.getElementById('locationInput').value.trim();
+        const descriptionVal = document.getElementById('descriptionInput').value.trim();
+        const needTypeVal = document.querySelector('input[name="needType"]:checked').value;
+
+        if (!locationVal || !descriptionVal) {
+          showToast("Please fill in both location and situation description.");
+          return;
+        }
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `<span class="loading-spinner"></span> Transmitting to AI Dispatch...`;
+
+        try {
+          const formData = new FormData();
+          formData.append("location", locationVal);
+          formData.append("description", descriptionVal);
+          formData.append("need_type", needTypeVal);
+          if (capturedLat) formData.append("lat", capturedLat);
+          if (capturedLng) formData.append("lng", capturedLng);
+          if (selectedPhotoFile) formData.append("photo", selectedPhotoFile);
+
+          const res = await fetch(`${API_BASE}/api/reports`, {
+            method: "POST",
+            body: formData
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            btnSubmit.style.display = 'none';
+            resultCard.classList.add('show');
+            document.getElementById('resReportId').textContent = `Incident ID: #${data.report.id.substring(0, 8)}`;
+            const statusBtn = document.getElementById('btnGoStatusPage');
+            if (statusBtn) {
+              statusBtn.href = `status.html?id=${data.report.id}`;
+            }
+
+            const badge = document.getElementById('resUrgencyBadge');
+            const urg = (data.report.urgency || 'medium').toLowerCase();
+            badge.textContent = urg.toUpperCase();
+            badge.className = `badge badge-${urg}`;
+
+            document.getElementById('resReasoning').innerHTML = `<b>AI Priority Triage:</b> ${data.report.reasoning}`;
+
+            const matched = data.matched_resource;
+            const matchBox = document.getElementById('resMatchedContainer');
+            if (matched && matched.resource) {
+              matchBox.style.display = 'block';
+              document.getElementById('resMatchedName').innerHTML = `<strong>Unit:</strong> ${matched.resource.name} (${matched.resource.type.toUpperCase()})`;
+              document.getElementById('resMatchedDistance').innerHTML = `<strong>Distance:</strong> ${matched.distance_km} km • Estimated ETA: ~${matched.eta_minutes} mins`;
+              document.getElementById('resMatchedContact').innerHTML = `<strong>Emergency Radio / Line:</strong> ${matched.resource.contact || 'Radio Ch-16'}`;
+            } else {
+              matchBox.innerHTML = `<h4><span>📡</span> Municipal Dispatch Alerted</h4><p>Your report has been queued for immediate field assignment by the city flood command team.</p>`;
+            }
+
+            resultCard.scrollIntoView({ behavior: 'smooth' });
+            showToast("Report submitted successfully!");
+          } else {
+            showToast("Error submitting report. Please retry.");
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = "🚨 Submit Emergency Report Now";
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("Network error. Please ensure the backend server is running.");
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = "🚨 Submit Emergency Report Now";
+        }
+      };
+    }
+
+    // SOS Modal Logic
+    const sosModal = document.getElementById('sosModal');
+    const sosNavBtn = document.getElementById('sosNavButton');
+    const closeModal = document.getElementById('closeModal');
+    const sosInstantBtn = document.getElementById('sosInstantBtn');
+    const sosLocationBtn = document.getElementById('sosLocationBtn');
+    const sosModalStatus = document.getElementById('sosModalStatus');
+
+    if (sosNavBtn) sosNavBtn.onclick = () => { sosModal.classList.add('show'); sosModalStatus.textContent = ""; };
+    if (closeModal) closeModal.onclick = () => sosModal.classList.remove('show');
+    window.addEventListener('click', (e) => { if (e.target === sosModal) sosModal.classList.remove('show'); });
+
+    if (sosLocationBtn) {
+      sosLocationBtn.onclick = () => {
+        sosModalStatus.textContent = "Acquiring GPS location...";
+        navigator.geolocation.getCurrentPosition(
+          (p) => {
+            capturedLat = p.coords.latitude;
+            capturedLng = p.coords.longitude;
+            sosModalStatus.textContent = `✓ GPS Captured: ${capturedLat.toFixed(4)}, ${capturedLng.toFixed(4)}`;
+            if (map) setMapPosition(capturedLat, capturedLng, true);
+          },
+          () => {
+            capturedLat = 18.5204;
+            capturedLng = 73.8567;
+            sosModalStatus.textContent = `✓ City Center GPS Set: 18.5204, 73.8567`;
+          }
+        );
+      };
+    }
+
+    if (sosInstantBtn) {
+      sosInstantBtn.onclick = async () => {
+        sosInstantBtn.disabled = true;
+        sosInstantBtn.innerHTML = `<span class="loading-spinner"></span> Transmitting SOS...`;
+        try {
+          const res = await fetch(`${API_BASE}/api/sos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "Rapid Emergency GPS SOS Beacon",
+              lat: capturedLat || 18.5204,
+              lng: capturedLng || 73.8567,
+              details: "Immediate rescue required! Water rapidly rising at GPS location."
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            sosModalStatus.innerHTML = `🚨 <b>SOS DISPATCHED!</b><br>Nearest Team: ${data.dispatched_unit?.resource?.name || 'Swift Rescue Team 1'}<br>ETA: ~${data.dispatched_unit?.eta_minutes || '5'} mins`;
+            showToast("Emergency SOS broadcasted to all rescue units!");
+          }
+        } catch (e) {
+          sosModalStatus.textContent = "Failed to dispatch SOS. Please call 112 / 108 directly.";
+        } finally {
+          sosInstantBtn.disabled = false;
+          sosInstantBtn.textContent = "🚨 Send Instant SOS Now";
+        }
+      };
+    }
+
+    // Initialize Map on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+    });
+  </script>
+</body>
+
+</html>

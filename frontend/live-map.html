@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071322" />
+  <title>FloodResQ — Live Flood Risk Intelligence & Command Map</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <style>
+    :root {
+      --bg-dark: #071322;
+      --bg-card: #091a30;
+      --bg-card-hover: #0d223f;
+      --border-dark: #1b3350;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --cyan: #24d3ff;
+      --blue: #0284c7;
+      --red: #ef4444;
+      --orange: #f97316;
+      --yellow: #facc15;
+      --green: #10b981;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Bar identical to image */
+    .navbar {
+      height: 70px;
+      background: #071426;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 3%;
+      gap: 28px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: auto;
+      text-decoration: none;
+      color: white;
+    }
+
+    .brand-logo {
+      height: 44px;
+      width: auto;
+      max-width: 240px;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .brand:hover .brand-logo {
+      transform: scale(1.02);
+      filter: brightness(1.08);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 34px;
+      line-height: 1;
+      background: linear-gradient(160deg, #1bd2ff, #0784d0);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 2px 10px rgba(27, 210, 255, 0.3);
+    }
+
+    .brand strong {
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+    }
+
+    .brand strong span {
+      color: var(--cyan);
+    }
+
+    .brand small {
+      display: block;
+      font-size: 9px;
+      color: #b9c9da;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    nav#mainNav {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+
+    nav#mainNav a {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e6eef7;
+      text-decoration: none;
+      padding: 8px 0;
+      transition: color 0.15s ease;
+    }
+
+    nav#mainNav a:hover,
+    nav#mainNav a.active {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .sos {
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 20px;
+      background: #ef303d;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(239, 48, 61, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .sos:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(239, 48, 61, 0.6);
+    }
+
+    .mobile-menu {
+      display: none;
+      background: none;
+      border: 0;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Main Full-Width Dashboard Layout with Margins */
+    .dashboard-layout {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 70px);
+      overflow: hidden;
+      width: 100%;
+      background: var(--bg-dark);
+      padding: 20px 4% 24px;
+      box-sizing: border-box;
+    }
+
+    /* Left Sidebar */
+    .left-sidebar {
+      background: #081526;
+      border-right: 1px solid var(--border-dark);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+      padding: 14px 12px;
+    }
+
+    .sidebar-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sidebar-item span {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+    }
+
+    .sidebar-item.active {
+      background: #0284c7;
+      color: white;
+      font-weight: 700;
+    }
+
+    .badge-count {
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    /* Left Sidebar Bottom Promo Card */
+    .sidebar-card {
+      background: #0b1d33;
+      border: 1px solid #1c3554;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+
+    .sidebar-card h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      color: white;
+    }
+
+    .sidebar-card p {
+      margin: 0 0 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .sidebar-card img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .btn-report-fluid {
+      width: 100%;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-report-fluid:hover {
+      background: #0369a1;
+    }
+
+    /* Center Section (Top Strip + Interactive Map + Scrubber) */
+    .center-section {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      gap: 14px;
+    }
+
+    /* Top 5 Metric Cards Strip */
+    .metric-strip {
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .m-card {
+      background: #091322;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1.5px solid var(--border-dark);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .m-card.red {
+      border-color: #ef4444;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.15);
+    }
+
+    .m-card.blue {
+      border-color: #0284c7;
+      box-shadow: 0 0 14px rgba(2, 132, 199, 0.15);
+    }
+
+    .m-card.green {
+      border-color: #10b981;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.15);
+    }
+
+    .m-card.yellow {
+      border-color: #ca8a04;
+      box-shadow: 0 0 14px rgba(202, 138, 4, 0.15);
+    }
+
+    .m-card.purple {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 14px rgba(139, 92, 246, 0.15);
+    }
+
+    .m-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .m-card.red .m-card-icon {
+      background: rgba(239, 68, 68, 0.18);
+      border-radius: 8px;
+    }
+
+    .m-card.blue .m-card-icon {
+      background: #0284c7;
+      color: white;
+    }
+
+    .m-card.green .m-card-icon {
+      background: #10b981;
+      color: white;
+      border-radius: 10px;
+    }
+
+    .m-card.yellow .m-card-icon {
+      background: #ca8a04;
+      color: white;
+      border-radius: 10px;
+    }
+
+    .m-card.purple .m-card-icon {
+      background: #8b5cf6;
+      color: white;
+    }
+
+    .m-card-data {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .m-card-data strong {
+      font-size: 24px;
+      font-weight: 800;
+      color: white;
+      display: block;
+      line-height: 1.1;
+    }
+
+    .m-card.red .m-card-data strong {
+      color: #ef4444;
+    }
+
+    .m-card-data small {
+      font-size: 11px;
+      color: #94a3b8;
+      display: block;
+      white-space: nowrap;
+      margin-top: 2px;
+      font-weight: 500;
+    }
+
+    .m-card-sub {
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .m-card.red .m-card-sub {
+      color: #ef4444;
+    }
+
+    .m-card.green .m-card-sub {
+      color: #10b981;
+    }
+
+    .m-card.yellow .m-card-sub {
+      color: #facc15;
+    }
+
+    .m-card.purple .m-card-sub {
+      color: #c084fc;
+    }
+
+    /* Main Map Box */
+    .map-wrapper {
+      flex: 1;
+      position: relative;
+      background: #06111f;
+      margin: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #1e334d;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    #liveMapContainer {
+      width: 100%;
+      height: 100%;
+      background: #06111f;
+    }
+
+    /* Aerial Satellite Dark styling */
+    #liveMapContainer .leaflet-tile-pane {
+      filter: brightness(0.68) contrast(1.28) saturate(1.15);
+    }
+
+    /* Floating Controls: Top Right */
+    .map-controls-floating {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      z-index: 500;
+    }
+
+    .realtime-pill {
+      background: rgba(8, 20, 36, 0.92);
+      border: 1px solid #1e3a5f;
+      color: #38bdf8;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .map-ctrl-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .map-ctrl-btn {
+      background: rgba(11, 26, 46, 0.9);
+      border: 1px solid #1e334d;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+    }
+
+    .map-ctrl-btn:hover {
+      background: #0284c7;
+      border-color: #0284c7;
+    }
+
+    /* Floating Legend: Bottom Left */
+    .map-legend-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(7, 18, 34, 0.92);
+      border: 1px solid #1c3554;
+      border-radius: 10px;
+      padding: 12px 14px;
+      z-index: 500;
+      backdrop-filter: blur(10px);
+      font-size: 11px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      min-width: 175px;
+    }
+
+    .map-legend-box h5 {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+      font-size: 10px;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.12);
+      margin: 6px 0;
+    }
+
+    /* Floating Timeline Scrubber: Bottom Center */
+    .timeline-scrubber-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 48px;
+      background: rgba(6, 17, 33, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 16px;
+      z-index: 500;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.65);
+      min-width: 520px;
+      max-width: 90%;
+    }
+
+    .btn-play-pause {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #0284c7;
+      border: none;
+      color: white;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .scrubber-time-display {
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .scrubber-slider-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .scrubber-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: #1e334d;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .scrubber-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    .scrubber-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .scrubber-live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #10b981;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .pulse-green-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: greenPulse 1.5s infinite;
+    }
+
+    @keyframes greenPulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: 0.5;
+      }
+    }
+
+    /* Floating Scale Bar: Bottom Right */
+    .map-scale-bar {
+      position: absolute;
+      bottom: 22px;
+      right: 26px;
+      z-index: 500;
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      pointer-events: none;
+    }
+
+    .map-scale-ticks {
+      width: 88px;
+      height: 4px;
+      border-left: 1.5px solid #94a3b8;
+      border-right: 1.5px solid #94a3b8;
+      border-bottom: 1.5px solid #94a3b8;
+    }
+
+    .map-scale-numbers {
+      display: flex;
+      justify-content: space-between;
+      width: 94px;
+      font-size: 9px;
+    }
+
+    /* Custom Leaflet Map Markers and Overlays */
+    .map-tag-banner {
+      background: rgba(185, 28, 28, 0.95);
+      color: white;
+      border: 1px solid #f87171;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .map-tag-water-rise {
+      background: rgba(127, 29, 29, 0.95);
+      color: white;
+      border: 1px solid #f87171;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+      line-height: 1.25;
+    }
+
+    .map-tag-water-rise small {
+      color: #fca5a5;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .map-tag-dispatch {
+      background: rgba(8, 26, 48, 0.95);
+      color: #38bdf8;
+      border: 1.5px solid #0284c7;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+      line-height: 1.25;
+    }
+
+    .map-tag-dispatch small {
+      color: #34d399;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .map-city-label {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 1), 0 0 10px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .map-city-label.prominent {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 1), 0 0 16px rgba(56, 189, 248, 0.7);
+    }
+
+    .map-city-label small {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .map-river-arrow {
+      color: #38bdf8;
+      font-size: 17px;
+      font-weight: 900;
+      pointer-events: none;
+      text-shadow: 0 0 8px #0284c7;
+      display: inline-block;
+    }
+
+    @media (max-width: 1200px) {
+      .metric-strip {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .timeline-scrubber-bar {
+        min-width: 420px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .metric-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-layout {
+        height: auto;
+      }
+
+      .map-wrapper {
+        height: 520px;
+      }
+
+      .timeline-scrubber-bar {
+        min-width: 300px;
+        font-size: 10px;
+        padding: 0 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navigation Bar identical to image -->
+  <header class="navbar">
+    <a class="brand" href="index.html" title="FloodResQ — Faster Response. Safer Tomorrows.">
+      <img src="images/floodresq-full-logo-dark.png" alt="FloodResQ - Faster Response. Safer Tomorrows." class="brand-logo">
+    </a>
+
+    <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+
+    <nav id="mainNav">
+      <a href="index.html">Home</a>
+      <a href="report.html">Report</a>
+      <a href="status.html">Track Status</a>
+      <a class="active" href="live-map.html">Live Map</a>
+      <a href="volunteer.html">Volunteer</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="sos" id="sosButton" onclick="window.location.href='report.html?sos=1'">🚨 Emergency SOS</button>
+    </div>
+  </header>
+
+  <!-- Full-Width Live Map Dashboard -->
+  <main class="dashboard-layout">
+    <!-- Center Section: Metrics Strip + Full Dark Map + Time Scrubber -->
+    <section class="center-section">
+      <!-- Top Metrics Strip (5 Cards) -->
+      <div class="metric-strip">
+        <!-- 1. Incidents (Red) -->
+        <div class="m-card red">
+          <div class="m-card-icon">⚠️</div>
+          <div class="m-card-data">
+            <strong id="mActiveIncidents">24</strong>
+            <small>Active Incidents</small>
+            <div class="m-card-sub">↑ 6 new</div>
+          </div>
+        </div>
+
+        <!-- 2. People Affected (Blue) -->
+        <div class="m-card blue">
+          <div class="m-card-icon">👥</div>
+          <div class="m-card-data">
+            <strong id="mPeopleRescued">436</strong>
+            <small>People Affected</small>
+          </div>
+        </div>
+
+        <!-- 3. Rescue Teams (Green) -->
+        <div class="m-card green">
+          <div class="m-card-icon">🚐</div>
+          <div class="m-card-data">
+            <strong id="mRescueTeams">18</strong>
+            <small>Rescue Teams</small>
+            <div class="m-card-sub">4 en route</div>
+          </div>
+        </div>
+
+        <!-- 4. Shelters (Yellow/Gold) -->
+        <div class="m-card yellow">
+          <div class="m-card-icon">🏠</div>
+          <div class="m-card-data">
+            <strong id="mShelters">72</strong>
+            <small>Shelter Capacity</small>
+            <div class="m-card-sub">62% filled</div>
+          </div>
+        </div>
+
+        <!-- 5. Medical Units (Purple) -->
+        <div class="m-card purple">
+          <div class="m-card-icon">✚</div>
+          <div class="m-card-data">
+            <strong id="mMedicalUnits">12</strong>
+            <small>Medical Units</small>
+            <div class="m-card-sub">3 en route</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Wrapper with Floating Elements -->
+      <div class="map-wrapper">
+        <div id="liveMapContainer"></div>
+
+        <!-- Floating Map Controls (Top Right) -->
+        <div class="map-controls-floating">
+          <div class="realtime-pill" id="btnLiveFilter">
+            <span class="pulse-green-dot"></span> Real-time Data ⌄
+          </div>
+          <div class="map-ctrl-stack">
+            <button class="map-ctrl-btn" id="btnToggle3D" title="Toggle 3D Satellite / Vector Map">3D</button>
+            <button class="map-ctrl-btn" id="btnCompass" title="Compass Bearing">N</button>
+            <button class="map-ctrl-btn" id="btnRecenter" title="Center on Pune Basin">🎯</button>
+            <button class="map-ctrl-btn" id="btnZoomIn" title="Zoom In">＋</button>
+            <button class="map-ctrl-btn" id="btnZoomOut" title="Zoom Out">－</button>
+          </div>
+        </div>
+
+        <!-- Map Legend (Bottom Left) -->
+        <div class="map-legend-box">
+          <h5>Flood Inundation (Water Depth)</h5>
+          <div class="legend-row">
+            <div class="legend-color" style="background:#1d4ed8;"></div>
+            <span>&gt; 3 m</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-color" style="background:#0284c7;"></div>
+            <span>1 – 3 m</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-color" style="background:#38bdf8;"></div>
+            <span>0.5 – 1 m</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-color" style="background:#7dd3fc;"></div>
+            <span>0.1 – 0.5 m</span>
+          </div>
+
+          <div class="legend-divider"></div>
+
+          <div class="legend-row">
+            <div class="legend-dot" style="background:#ef4444;"></div>
+            <span>Critical Zone</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:#f97316;"></div>
+            <span>High Risk Zone</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:#facc15;"></div>
+            <span>Moderate Risk</span>
+          </div>
+          <div class="legend-row">
+            <div class="legend-dot" style="background:#10b981;"></div>
+            <span>Safe Zone</span>
+          </div>
+        </div>
+
+        <!-- Floating Bottom Timeline Scrubber -->
+        <div class="timeline-scrubber-bar">
+          <button class="btn-play-pause" id="btnPlayPause" title="Simulate forecast">⏸</button>
+          <div class="scrubber-time-display" id="scrubberTimeLabel">09 Sep 2025 <b>08:45 AM</b></div>
+
+          <div class="scrubber-slider-wrap">
+            <input type="range" class="scrubber-slider" id="timeScrubber" min="0" max="5" value="0" step="1" />
+            <div class="scrubber-ticks">
+              <span>Now</span>
+              <span>+1h</span>
+              <span>+3h</span>
+              <span>+6h</span>
+              <span>+12h</span>
+              <span>+24h</span>
+            </div>
+          </div>
+
+          <div class="scrubber-live-indicator">
+            <span class="pulse-green-dot"></span> Live
+          </div>
+        </div>
+
+        <!-- Floating Scale Bar (Bottom Right) -->
+        <div class="map-scale-bar">
+          <div class="map-scale-numbers">
+            <span>0</span>
+            <span>2</span>
+            <span>4</span>
+            <span>6 km</span>
+          </div>
+          <div class="map-scale-ticks"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script>
+    // Determine API Base URL dynamically
+    const API_BASE = (() => {
+      if (window.location.protocol === 'file:') return 'http://127.0.0.1:8000';
+      if (window.location.port && window.location.port !== '8000') {
+        const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? window.location.hostname
+          : '127.0.0.1';
+        return `http://${host}:8000`;
+      }
+      return '';
+    })();
+
+    let map = null;
+    let markersLayer = null;
+    let heatLayer = null;
+    let routeLayer = null;
+    let isPlaying = false;
+    let playInterval = null;
+
+    // Camera views array
+    const cameras = [
+      { title: 'Mula-Mutha River Causeway', loc: 'Shivajinagar Bridge, Pune Basin', img: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80' },
+      { title: 'Sangam Bridge Confluence', loc: 'Yerawada Embankment Corridor', img: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80' },
+      { title: 'Deccan Riverside Causeway', loc: 'Z-Bridge & Sambhaji Park', img: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80' },
+      { title: 'Bund Garden Lock Gate', loc: 'Boat Club Water Gate, Pune', img: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80' }
+    ];
+    let currentCamIndex = 0;
+
+    function updateCameraView() {
+      const c = cameras[currentCamIndex];
+      const titleEl = document.getElementById('camTitle');
+      const locEl = document.getElementById('camLoc');
+      const imgEl = document.getElementById('camImg');
+      if (titleEl) titleEl.textContent = c.title;
+      if (locEl) locEl.textContent = c.loc;
+      if (imgEl) imgEl.src = c.img;
+    }
+    function nextCamera() {
+      currentCamIndex = (currentCamIndex + 1) % cameras.length;
+      updateCameraView();
+    }
+    function prevCamera() {
+      currentCamIndex = (currentCamIndex - 1 + cameras.length) % cameras.length;
+      updateCameraView();
+    }
+    function cycleCamera() { nextCamera(); }
+
+    // Initialize Map with High-Contrast Dark Tiles
+    function initMap() {
+      const puneCenter = [18.528, 73.856];
+      map = L.map('liveMapContainer', {
+        center: puneCenter,
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      // High-Resolution Aerial Satellite Basemap Tiles (Esri World Imagery)
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Esri Satellite'
+      });
+
+      // CartoDB Dark Matter Vector Tiles
+      const darkVectorLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd'
+      });
+
+      satelliteLayer.addTo(map);
+
+      let isSatellite = true;
+      const btn3D = document.getElementById('btnToggle3D');
+      if (btn3D) {
+        btn3D.onclick = () => {
+          if (isSatellite) {
+            map.removeLayer(satelliteLayer);
+            darkVectorLayer.addTo(map);
+            isSatellite = false;
+            btn3D.textContent = '2D';
+          } else {
+            map.removeLayer(darkVectorLayer);
+            satelliteLayer.addTo(map);
+            isSatellite = true;
+            btn3D.textContent = '3D';
+          }
+        };
+      }
+
+      heatLayer = L.layerGroup().addTo(map);
+      routeLayer = L.layerGroup().addTo(map);
+      markersLayer = L.layerGroup().addTo(map);
+
+      drawRiverAndFloodHeatZones();
+      drawRescueDispatchRoute();
+
+      setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+      window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
+    }
+
+    // Draw realistic river flow and flood inundation risk polygons
+    function drawRiverAndFloodHeatZones() {
+      if (!heatLayer) return;
+      heatLayer.clearLayers();
+
+      // Mula-Mutha River High Water Flow Polyline
+      const riverPath = [
+        [18.568, 73.790], // Aundh
+        [18.550, 73.820], // Khadki
+        [18.535, 73.850], // Sangam
+        [18.528, 73.864], // Confluence
+        [18.538, 73.890], // Bund Garden
+        [18.525, 73.930]  // Hadapsar
+      ];
+
+      // Deep Blue River Inundation Ribbon
+      L.polyline(riverPath, {
+        color: '#0284c7',
+        weight: 18,
+        opacity: 0.6,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(heatLayer);
+
+      L.polyline(riverPath, {
+        color: '#38bdf8',
+        weight: 6,
+        opacity: 0.9,
+        lineCap: 'round',
+        dashArray: '8, 12'
+      }).addTo(heatLayer);
+
+      // Flood Inundation Zones (Concentric Heat Discs matching image)
+      const floodZones = [
+        // Sangamwadi Critical Core
+        { lat: 18.532, lng: 73.858, r: 1600, color: '#ef4444', label: 'High Risk Area', fillOpacity: 0.45 },
+        { lat: 18.532, lng: 73.858, r: 2400, color: '#f97316', label: 'Moderate Risk', fillOpacity: 0.28 },
+        { lat: 18.532, lng: 73.858, r: 3200, color: '#facc15', label: 'Low Risk Fringe', fillOpacity: 0.16 },
+
+        // Deccan Gymkhana Low-Lying Riverside
+        { lat: 18.514, lng: 73.840, r: 1200, color: '#ef4444', label: 'Critical Causeway Inundation', fillOpacity: 0.42 },
+        { lat: 18.514, lng: 73.840, r: 1900, color: '#f97316', label: 'Moderate Flood Corridor', fillOpacity: 0.25 },
+
+        // Hadapsar Canal Basin
+        { lat: 18.510, lng: 73.925, r: 1400, color: '#f97316', label: 'Water Logging Zone', fillOpacity: 0.35 }
+      ];
+
+      floodZones.forEach(z => {
+        L.circle([z.lat, z.lng], {
+          radius: z.r,
+          color: z.color,
+          fillColor: z.color,
+          fillOpacity: z.fillOpacity,
+          weight: 1.5
+        }).addTo(heatLayer);
+      });
+
+      // Banners on Map (as shown in second image)
+      const highRiskTag = L.divIcon({
+        className: 'map-tag-banner-wrap',
+        html: '<div class="map-tag-banner">✦ High Risk Area</div>',
+        iconAnchor: [60, 15]
+      });
+      L.marker([18.528, 73.838], { icon: highRiskTag }).addTo(heatLayer);
+
+      const waterLevelTag = L.divIcon({
+        className: 'map-tag-banner-wrap',
+        html: '<div class="map-tag-banner" style="background:#b91c1c;">▲ Water Level Rising<br><small>+0.8 m (2 hrs)</small></div>',
+        iconAnchor: [50, 20]
+      });
+      L.marker([18.508, 73.858], { icon: waterLevelTag }).addTo(heatLayer);
+
+      // Prominent Pune Neighborhood Labels (as shown in image)
+      const neighborhoods = [
+        { name: 'Chinchwad', lat: 18.625, lng: 73.805, prominent: false },
+        { name: 'Pashan', lat: 18.542, lng: 73.785, prominent: false },
+        { name: 'Aundh', lat: 18.562, lng: 73.808, prominent: false },
+        { name: 'Baner', lat: 18.552, lng: 73.780, prominent: false },
+        { name: 'Kothrud', lat: 18.505, lng: 73.808, prominent: false },
+        { name: 'Pune<br><small>Shivajinagar</small>', lat: 18.528, lng: 73.850, prominent: true },
+        { name: 'Yerawada', lat: 18.555, lng: 73.886, prominent: false },
+        { name: 'Hadapsar', lat: 18.508, lng: 73.935, prominent: false },
+        { name: 'Katraj', lat: 18.455, lng: 73.860, prominent: false }
+      ];
+
+      neighborhoods.forEach(n => {
+        const icon = L.divIcon({
+          className: 'map-city-label-wrap',
+          html: `<div class="map-city-label ${n.prominent ? 'prominent' : ''}">${n.name}</div>`,
+          iconAnchor: [40, 10]
+        });
+        L.marker([n.lat, n.lng], { icon: icon, interactive: false }).addTo(heatLayer);
+      });
+
+      // River flow direction arrows
+      const arrowPoints = [
+        [18.560, 73.805],
+        [18.542, 73.835],
+        [18.530, 73.875],
+        [18.522, 73.910]
+      ];
+      arrowPoints.forEach(pos => {
+        const arrowIcon = L.divIcon({
+          className: 'map-river-arrow-wrap',
+          html: '<span class="map-river-arrow">➤</span>',
+          iconAnchor: [8, 8]
+        });
+        L.marker(pos, { icon: arrowIcon, interactive: false }).addTo(heatLayer);
+      });
+    }
+
+    // Draw active neon green rescue vehicle route line with ETA callout
+    function drawRescueDispatchRoute() {
+      if (!routeLayer) return;
+      routeLayer.clearLayers();
+
+      const routeCoordinates = [
+        [18.555, 73.890], // Station Base (Yerawada)
+        [18.545, 73.870],
+        [18.535, 73.855], // River Crossing
+        [18.522, 73.852],
+        [18.512, 73.865], // Target (Shivajinagar Lowland)
+        [18.500, 73.875]
+      ];
+
+      // Glowing Neon Route
+      L.polyline(routeCoordinates, {
+        color: '#10b981',
+        weight: 4,
+        opacity: 0.95,
+        dashArray: '6, 8',
+        lineCap: 'round'
+      }).addTo(routeLayer);
+
+      // Dispatch Unit Callout Marker
+      const dispatchCallout = L.divIcon({
+        className: 'map-tag-dispatch-wrap',
+        html: `
+          <div class="map-tag-dispatch">
+            🚐 <b>Rescue Team R-03</b><br>
+            <small style="color:#10b981;">⏱ ETA: 8 min</small>
+          </div>
+        `,
+        iconAnchor: [45, 30]
+      });
+      L.marker([18.545, 73.870], { icon: dispatchCallout }).addTo(routeLayer);
+    }
+
+    // Render incidents, rescue assets, shelters, and medical aid pins
+    function renderPoints(points) {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+
+      points.forEach(pt => {
+        let iconHtml = '';
+        let anchor = [15, 15];
+
+        if (pt.type === 'incident') {
+          const bg = pt.urgency === 'critical' ? '#ef4444' : pt.urgency === 'high' ? '#f97316' : '#facc15';
+          iconHtml = `<div style="width:30px;height:30px;background:${bg};border-radius:50%;border:2px solid white;display:grid;place-items:center;color:white;font-weight:900;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,0.6);cursor:pointer;">!</div>`;
+        } else if (pt.resource_type === 'rescue') {
+          iconHtml = `<div style="width:32px;height:32px;background:#0284c7;border-radius:8px;border:2px solid #38bdf8;display:grid;place-items:center;color:white;font-size:16px;box-shadow:0 4px 14px rgba(0,0,0,0.6);cursor:pointer;">🚐</div>`;
+        } else if (pt.resource_type === 'shelter') {
+          iconHtml = `<div style="width:30px;height:30px;background:#059669;border-radius:50%;border:2px solid #86efac;display:grid;place-items:center;color:white;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,0.6);cursor:pointer;">🏠</div>`;
+        } else if (pt.resource_type === 'medical') {
+          iconHtml = `<div style="width:30px;height:30px;background:#dc2626;border-radius:50%;border:2px solid white;display:grid;place-items:center;color:white;font-size:15px;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,0.6);cursor:pointer;">✚</div>`;
+        } else if (pt.resource_type === 'aid') {
+          iconHtml = `<div style="width:26px;height:26px;background:#f97316;border-radius:50%;border:2px solid white;display:grid;place-items:center;color:white;font-size:15px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,0.6);cursor:pointer;">+</div>`;
+        } else {
+          iconHtml = `<div style="width:28px;height:28px;background:#10b981;border-radius:50%;border:2px solid white;display:grid;place-items:center;color:white;font-size:13px;">●</div>`;
+        }
+
+        const icon = L.divIcon({
+          className: 'custom-map-icon',
+          html: iconHtml,
+          iconSize: [30, 30],
+          iconAnchor: anchor
+        });
+
+        const marker = L.marker([pt.lat, pt.lng], { icon: icon });
+        const popupHtml = `
+          <div style="font-family:Inter,sans-serif; color:#0f172a; min-width:170px;">
+            <h4 style="margin:0 0 4px; font-size:13px;">${escapeHtml(pt.title || pt.location || 'Incident')}</h4>
+            <p style="margin:0 0 6px; font-size:11px; color:#475569;">${escapeHtml(pt.description || 'Verified Flood Alert')}</p>
+            ${pt.id ? `<a href="status.html?id=${pt.id}" target="_blank" style="display:inline-block; font-size:11px; color:#0284c7; font-weight:700; text-decoration:none;">🔍 Track Status & Dispatch →</a>` : ''}
+          </div>
+        `;
+        marker.bindPopup(popupHtml);
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // Default pins matching screenshot exactly
+    const defaultPoints = [
+      // Critical Incidents (Red pins)
+      { type: 'incident', urgency: 'critical', lat: 18.520, lng: 73.838, title: 'Deccan Causeway Underpass Submerged', description: 'Critical water depth > 2.5m, stranded vehicles' },
+      { type: 'incident', urgency: 'critical', lat: 18.508, lng: 73.935, title: 'Hadapsar Lowland Flooding', description: 'Canal breach risk, critical alert' },
+      { type: 'incident', urgency: 'critical', lat: 18.538, lng: 73.858, title: 'Sangam Bridge Confluence Overflow', description: 'Water level at danger threshold' },
+      { type: 'incident', urgency: 'critical', lat: 18.585, lng: 73.865, title: 'Chinchwad North Embankment Inflow', description: 'Rapid water accumulation' },
+
+      // Shelters (Green pins)
+      { type: 'resource', resource_type: 'shelter', lat: 18.560, lng: 73.805, title: 'Aundh Community Relief Camp', description: 'Capacity: 250 | Food & Medical' },
+      { type: 'resource', resource_type: 'shelter', lat: 18.528, lng: 73.844, title: 'Shivajinagar Municipal Shelter', description: 'Capacity: 400 | Fully Operational' },
+      { type: 'resource', resource_type: 'shelter', lat: 18.500, lng: 73.812, title: 'Kothrud High School Evacuation Center', description: 'Capacity: 300' },
+      { type: 'resource', resource_type: 'shelter', lat: 18.500, lng: 73.918, title: 'Hadapsar Stadium Relief Shelter', description: 'Capacity: 500' },
+
+      // Rescue Teams (Blue pins)
+      { type: 'resource', resource_type: 'rescue', lat: 18.546, lng: 73.872, title: 'Rescue Team R-03 (En Route)', description: 'Boat unit dispatched to Shivajinagar' },
+      { type: 'resource', resource_type: 'rescue', lat: 18.542, lng: 73.862, title: 'NDRF Squad 4', description: 'Amphibious vehicle active' },
+      { type: 'resource', resource_type: 'rescue', lat: 18.532, lng: 73.892, title: 'Boat Rescue Team 02', description: 'Patrolling Bund Garden' },
+      { type: 'resource', resource_type: 'rescue', lat: 18.518, lng: 73.848, title: 'Rapid Response Unit 1', description: 'On-site Deccan basin' },
+      { type: 'resource', resource_type: 'rescue', lat: 18.505, lng: 73.910, title: 'Disaster Taskforce 5', description: 'Hadapsar perimeter standby' },
+
+      // Medical Units (Red pins with +)
+      { type: 'resource', resource_type: 'medical', lat: 18.580, lng: 73.862, title: 'Mobile Trauma Unit 1', description: 'Chinchwad Sector' },
+      { type: 'resource', resource_type: 'medical', lat: 18.532, lng: 73.882, title: 'Emergency Triage Camp', description: 'Bund Garden Base' },
+      { type: 'resource', resource_type: 'medical', lat: 18.498, lng: 73.856, title: 'Medical Aid Post Swargate', description: 'Paramedic ambulance on site' },
+
+      // Aid Checkpoints (Orange pins with +)
+      { type: 'resource', resource_type: 'aid', lat: 18.524, lng: 73.832, title: 'Aid Station Deccan Bridge', description: 'Water & Supplies' },
+      { type: 'resource', resource_type: 'aid', lat: 18.550, lng: 73.792, title: 'Aid Station Baner Junction', description: 'Emergency provisions' },
+      { type: 'resource', resource_type: 'aid', lat: 18.536, lng: 73.872, title: 'Aid Station Sangam', description: 'Life jackets & rations' },
+      { type: 'resource', resource_type: 'aid', lat: 18.542, lng: 73.880, title: 'Aid Station Yerawada', description: 'Evacuation support' },
+      { type: 'resource', resource_type: 'aid', lat: 18.503, lng: 73.945, title: 'Aid Station Hadapsar Canal', description: 'First aid & dry food' }
+    ];
+
+    // Load Live Map Data from Backend
+    async function loadMapData() {
+      try {
+        const res = await fetch(`${API_BASE}/api/map-data`);
+        if (!res.ok) throw new Error('API offline');
+        const data = await res.json();
+        const combined = [...defaultPoints, ...(data.points || [])];
+        renderPoints(combined);
+      } catch (e) {
+        renderPoints(defaultPoints);
+      }
+    }
+
+    // Load Live Stats from Backend
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/api/stats`);
+        if (!res.ok) return;
+        const s = await res.json();
+
+        if (s.critical_incidents !== undefined) {
+          const totalIncidents = (s.critical_incidents || 0) + (s.high_priority || 0) + (s.moderate_priority || 0);
+          const actIncEl = document.getElementById('mActiveIncidents');
+          if (actIncEl) actIncEl.textContent = totalIncidents || 24;
+          const badgeEl = document.getElementById('badgeIncidentCount');
+          if (badgeEl) badgeEl.textContent = totalIncidents || 24;
+        }
+        if (s.people_rescued) document.getElementById('mPeopleRescued').textContent = s.people_rescued;
+        if (s.rescue_teams) document.getElementById('mRescueTeams').textContent = s.rescue_teams;
+        if (s.shelter_capacity) document.getElementById('mShelters').textContent = s.active_shelters || 72;
+      } catch (e) {
+        // keep mockup numbers
+      }
+    }
+
+    // Navigation & Map Control Buttons
+    document.getElementById('btnZoomIn').onclick = () => map && map.zoomIn();
+    document.getElementById('btnZoomOut').onclick = () => map && map.zoomOut();
+    document.getElementById('btnRecenter').onclick = () => map && map.setView([18.528, 73.856], 13);
+    document.getElementById('btnCompass').onclick = () => map && map.setView([18.528, 73.856], 13);
+
+    // Filter Layers from Left Sidebar
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.onclick = () => {
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const layer = item.dataset.layer;
+        filterMapLayer(layer);
+      };
+    });
+
+    function filterMapLayer(layer) {
+      if (layer === 'all') {
+        loadMapData();
+        return;
+      }
+      fetch(`${API_BASE}/api/map-data`)
+        .then(r => r.json())
+        .then(d => {
+          if (!d.points) return;
+          const filtered = d.points.filter(p => {
+            if (layer === 'incidents') return p.type === 'incident';
+            if (layer === 'rescue') return p.resource_type === 'rescue';
+            if (layer === 'shelter' || layer === 'shelters') return p.resource_type === 'shelter';
+            if (layer === 'medical') return p.resource_type === 'medical';
+            return true;
+          });
+          renderPoints(filtered);
+        });
+    }
+
+    function flyToPoint(lat, lng) {
+      if (map) {
+        map.flyTo([lat, lng], 15, { duration: 1.5 });
+      }
+    }
+
+    // Time Scrubber Animation
+    const scrubber = document.getElementById('timeScrubber');
+    const playBtn = document.getElementById('btnPlayPause');
+    const timeLabel = document.getElementById('scrubberTimeLabel');
+    const timeSteps = [
+      '09 Sep 2026  08:45 AM (Now)',
+      '09 Sep 2026  09:45 AM (+1h Forecast)',
+      '09 Sep 2026  11:45 AM (+3h Peak Inflow)',
+      '09 Sep 2026  02:45 PM (+6h River High)',
+      '09 Sep 2026  08:45 PM (+12h Receding)',
+      '10 Sep 2026  08:45 AM (+24h Safe Trend)'
+    ];
+
+    scrubber.oninput = () => {
+      timeLabel.textContent = timeSteps[scrubber.value] || '09 Sep 2026  08:45 AM';
+    };
+
+    playBtn.onclick = () => {
+      if (isPlaying) {
+        clearInterval(playInterval);
+        isPlaying = false;
+        playBtn.textContent = '▶';
+      } else {
+        isPlaying = true;
+        playBtn.textContent = '⏸';
+        playInterval = setInterval(() => {
+          let v = parseInt(scrubber.value, 10) + 1;
+          if (v > 5) v = 0;
+          scrubber.value = v;
+          timeLabel.textContent = timeSteps[v];
+        }, 2200);
+      }
+    };
+
+    // Location search on map
+    const searchInput = document.getElementById('mapSearchInput');
+    if (searchInput) {
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const q = searchInput.value.trim().toLowerCase();
+          if (q.includes('aundh')) flyToPoint(18.560, 73.805);
+          else if (q.includes('hadapsar')) flyToPoint(18.508, 73.929);
+          else if (q.includes('kothrud')) flyToPoint(18.507, 73.808);
+          else if (q.includes('yerawada') || q.includes('sangam')) flyToPoint(18.535, 73.864);
+          else flyToPoint(18.528, 73.856);
+        }
+      });
+    }
+
+    // Initial Startup
+    initMap();
+    loadMapData();
+    loadStats();
+
+    // Auto-refresh map data every 25 seconds
+    setInterval(loadMapData, 25000);
+  </script>
+</body>
+
+</html>
